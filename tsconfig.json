@@ -10,6 +10,7 @@
     "paths": {
       "@root/*": ["src/*"],
       "@builders/*": ["src/builders/*"],
+      "@core/*": ["src/core/*"],
       "@interfaces/*": ["src/interfaces/*"],
       "@schemas/*": ["src/schemas/*"],
       "@utils/*": ["src/utils/*"]

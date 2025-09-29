@@ -3,67 +3,67 @@
 TypeScript SQL query builder with type safety and multi-database support. Provides a fluent API for building SQL queries programmatically across PostgreSQL, MySQL, and SQLite databases.
 
 ## 🗺️ Roadmap
-- [ ] Base Architecture
-- [ ] Query Builder
-  - [ ] **SELECT queries**
-    - [ ] Basic select with columns
-    - [ ] Select with table aliases
-    - [ ] Select with column aliases
-    - [ ] Select distinct
-    - [ ] Select with aggregations (COUNT, SUM, AVG, etc.)
-    - [ ] Advanced aggregations (STDDEV, VARIANCE, PERCENTILE_CONT)
-    - [ ] Statistical functions (MODE, GROUP_CONCAT, STRING_AGG)
-    - [ ] Array aggregations (ARRAY_AGG, JSON_AGG)
-  - [ ] **FROM clause**
-    - [ ] Single table selection
-    - [ ] Table aliases
-    - [ ] Subqueries in FROM
-  - [ ] **WHERE conditions**
-    - [ ] Basic where clauses
-    - [ ] Multiple where conditions (AND/OR)
-    - [ ] Where with operators (=, !=, >, <, >=, <=, LIKE, IN, BETWEEN)
-    - [ ] Where with NULL checks
+- [x] Base Architecture
+- [x] Query Builder
+    - [x] **SELECT queries**
+      - [x] Basic select with columns
+      - [x] Select with table aliases
+      - [x] Select with column aliases
+      - [x] Select distinct
+      - [x] Select with aggregations (COUNT, SUM, AVG, etc.)
+      - [ ] Advanced aggregations (STDDEV, VARIANCE, PERCENTILE_CONT)
+      - [ ] Statistical functions (MODE, GROUP_CONCAT, STRING_AGG)
+      - [ ] Array aggregations (ARRAY_AGG, JSON_AGG)
+  - [x] **FROM clause**
+    - [x] Single table selection
+    - [x] Table aliases
+    - [x] Subqueries in FROM
+  - [x] **WHERE conditions**
+    - [x] Basic where clauses
+    - [x] Multiple where conditions (AND/OR) - andWhere() and orWhere() methods
+    - [x] Where with operators (=, !=, >, <, >=, <=, LIKE, IN, BETWEEN, IS NULL, IS NOT NULL, EXISTS, NOT EXISTS)
+    - [x] Where with NULL checks
     - [ ] Where with raw SQL
     - [ ] Advanced operators (IS DISTINCT FROM, ILIKE, SIMILAR TO)
     - [ ] Regex operators (REGEXP, RLIKE, GLOB)
     - [ ] Pattern matching operators
-  - [ ] **JOIN operations**
-    - [ ] INNER JOIN
-    - [ ] LEFT JOIN
-    - [ ] RIGHT JOIN
-    - [ ] FULL OUTER JOIN
-    - [ ] CROSS JOIN
-    - [ ] Join with conditions
-  - [ ] **GROUP BY & HAVING**
-    - [ ] Group by single/multiple columns
-    - [ ] Having conditions
-    - [ ] Group by with aggregations
-  - [ ] **ORDER BY**
-    - [ ] Order by single/multiple columns
-    - [ ] ASC/DESC ordering
+  - [x] **JOIN operations**
+    - [x] INNER JOIN - innerJoin() method
+    - [x] LEFT JOIN - leftJoin() method
+    - [x] RIGHT JOIN - rightJoin() method
+    - [x] FULL OUTER JOIN - fullJoin() method
+    - [x] CROSS JOIN - crossJoin() method
+    - [x] Join with conditions
+  - [x] **GROUP BY & HAVING**
+    - [x] Group by single/multiple columns
+    - [x] Having conditions
+    - [x] Group by with aggregations
+  - [x] **ORDER BY**
+    - [x] Order by single/multiple columns
+    - [x] ASC/DESC ordering
     - [ ] Order by with expressions
-  - [ ] **LIMIT & OFFSET**
-    - [ ] Limit results
-    - [ ] Offset for pagination
-    - [ ] Limit with offset
-  - [ ] **INSERT queries**
-    - [ ] Single row insert
-    - [ ] Multiple row insert
-    - [ ] Insert with returning clause
-  - [ ] **UPDATE queries**
-    - [ ] Update with where conditions
-    - [ ] Update multiple columns
-    - [ ] Update with returning clause
-  - [ ] **DELETE queries**
-    - [ ] Delete with where conditions
-    - [ ] Delete with returning clause
-  - [ ] **Raw SQL support**
-    - [ ] Raw SQL injection
+  - [x] **LIMIT & OFFSET**
+    - [x] Limit results
+    - [x] Offset for pagination
+    - [x] Limit with offset
+  - [x] **INSERT queries**
+    - [x] Single row insert
+    - [x] Multiple row insert
+    - [x] Insert with returning clause
+  - [x] **UPDATE queries**
+    - [x] Update with where conditions
+    - [x] Update multiple columns
+    - [x] Update with returning clause
+  - [x] **DELETE queries**
+    - [x] Delete with where conditions
+    - [x] Delete with returning clause
+  - [x] **Raw SQL support**
+    - [x] Raw SQL injection
     - [ ] Raw expressions in queries
-  - [ ] **Query execution**
-    - [ ] Query string generation
-    - [ ] Parameter binding
-    - [ ] Query validation
+  - [x] **Query execution**
+    - [x] Query string generation
+    - [x] Parameter binding
+    - [x] Query validation
   - [ ] **SQL Features**
     - [ ] **UNION operations**
       - [ ] UNION
@@ -148,44 +148,44 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
       - [ ] Execute prepared statements
       - [ ] Deallocate prepared statements
       - [ ] Parameter binding optimization
-- [ ] **Database Support**
-  - [ ] **PostgreSQL**
-    - [ ] Connection handling
-    - [ ] Dialect-specific SQL generation
-    - [ ] Data type mapping
-    - [ ] Transaction support
-    - [ ] Custom data types (UUID, ENUM, etc.)
+- [x] **Database Support**
+  - [x] **PostgreSQL**
+    - [x] Connection handling
+    - [x] Dialect-specific SQL generation
+    - [x] Data type mapping
+    - [x] Transaction support
+    - [x] Custom data types (UUID, ENUM, etc.)
     - [ ] Advanced indexing (GIN, GiST, etc.)
     - [ ] Partitioning support
     - [ ] PostgreSQL extensions
-  - [ ] **MySQL**
-    - [ ] Connection handling
-    - [ ] Dialect-specific SQL generation
-    - [ ] Data type mapping
-    - [ ] Transaction support
-    - [ ] AUTO_INCREMENT handling
+  - [x] **MySQL**
+    - [x] Connection handling
+    - [x] Dialect-specific SQL generation
+    - [x] Data type mapping
+    - [x] Transaction support
+    - [x] AUTO_INCREMENT handling
     - [ ] MySQL-specific functions
     - [ ] MySQL storage engines
     - [ ] MySQL-specific data types
-  - [ ] **SQLite**
-    - [ ] Connection handling
-    - [ ] Dialect-specific SQL generation
-    - [ ] Data type mapping
-    - [ ] Transaction support
+  - [x] **SQLite**
+    - [x] Connection handling
+    - [x] Dialect-specific SQL generation
+    - [x] Data type mapping
+    - [x] Transaction support
     - [ ] FTS (Full-Text Search) modules
     - [ ] SQLite-specific pragmas
     - [ ] SQLite extensions
     - [ ] SQLite-specific functions
-  - [ ] **Connection Management**
-    - [ ] Connection pooling
-    - [ ] Connection configuration
-    - [ ] Connection lifecycle management
+  - [x] **Connection Management**
+    - [x] Connection pooling
+    - [x] Connection configuration
+    - [x] Connection lifecycle management
     - [ ] Error handling and reconnection
-  - [ ] **Dialect System**
-    - [ ] Base dialect interface
-    - [ ] SQL syntax variations
-    - [ ] Function name differences
-    - [ ] Data type differences
+  - [x] **Dialect System**
+    - [x] Base dialect interface
+    - [x] SQL syntax variations
+    - [x] Function name differences
+    - [x] Data type differences
 - [ ] **Schema Builder**
   - [ ] **Table Operations**
     - [ ] Create table
@@ -274,13 +274,15 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
     - [ ] Query plan analysis
     - [ ] Index recommendations
     - [ ] Connection pool monitoring
-  - [ ] **Security & Compliance**
-    - [ ] SQL injection prevention
-    - [ ] Query sanitization
+  - [x] **Security & Compliance**
+    - [x] SQL injection prevention
+    - [x] Query sanitization
+    - [x] Parameter validation
+    - [x] Input validation (empty table names, invalid operators)
+    - [x] Query validation and error handling
+    - [x] Regex safety improvements
     - [ ] Access control integration
     - [ ] Audit logging
-    - [ ] Parameter validation
-    - [ ] Query whitelisting
 
 ---
 
