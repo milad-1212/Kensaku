@@ -1,9 +1,15 @@
 import type { QueryUpdate, QueryWhereCondition, QueryComparisonOperator } from '@interfaces/index'
+import {
+  ReturningClauseHelpers,
+  WhereConditionHelpers,
+  WhereClauseHelpers
+} from '@builders/helpers/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
 
 /**
  * Query builder for UPDATE operations with fluent interface.
+ * @description Provides a fluent interface for building UPDATE SQL queries with support for WHERE conditions and RETURNING clauses.
  * @template T - Return type of query results
  */
 export class UpdateBuilder<T = unknown> extends BaseQueryBuilder<T> {
@@ -57,23 +63,9 @@ export class UpdateBuilder<T = unknown> extends BaseQueryBuilder<T> {
     value?: unknown
   ): this {
     this.query.where ??= []
-    if (typeof columnOrCondition === 'string') {
-      if (typeof operatorOrValue === 'string') {
-        this.query.where.push({
-          column: columnOrCondition,
-          operator: operatorOrValue,
-          value: value ?? null
-        })
-      } else {
-        this.query.where.push({
-          column: columnOrCondition,
-          operator: '=',
-          value: operatorOrValue
-        })
-      }
-    } else {
-      this.query.where.push(columnOrCondition)
-    }
+    this.query.where.push(
+      WhereClauseHelpers.createWhereCondition(columnOrCondition, operatorOrValue, value)
+    )
     return this
   }
 
@@ -104,27 +96,9 @@ export class UpdateBuilder<T = unknown> extends BaseQueryBuilder<T> {
     value?: unknown
   ): this {
     this.query.where ??= []
-    let condition: QueryWhereCondition
-    if (typeof columnOrCondition === 'string') {
-      if (typeof operatorOrValue === 'string') {
-        condition = {
-          column: columnOrCondition,
-          operator: operatorOrValue,
-          value: value ?? null,
-          logical: 'AND'
-        }
-      } else {
-        condition = {
-          column: columnOrCondition,
-          operator: '=',
-          value: operatorOrValue,
-          logical: 'AND'
-        }
-      }
-    } else {
-      condition = { ...columnOrCondition, logical: 'AND' }
-    }
-    this.query.where.push(condition)
+    this.query.where.push(
+      WhereClauseHelpers.createAndWhereCondition(columnOrCondition, operatorOrValue, value)
+    )
     return this
   }
 
@@ -155,27 +129,9 @@ export class UpdateBuilder<T = unknown> extends BaseQueryBuilder<T> {
     value?: unknown
   ): this {
     this.query.where ??= []
-    let condition: QueryWhereCondition
-    if (typeof columnOrCondition === 'string') {
-      if (typeof operatorOrValue === 'string') {
-        condition = {
-          column: columnOrCondition,
-          operator: operatorOrValue,
-          value: value ?? null,
-          logical: 'OR'
-        }
-      } else {
-        condition = {
-          column: columnOrCondition,
-          operator: '=',
-          value: operatorOrValue,
-          logical: 'OR'
-        }
-      }
-    } else {
-      condition = { ...columnOrCondition, logical: 'OR' }
-    }
-    this.query.where.push(condition)
+    this.query.where.push(
+      WhereClauseHelpers.createOrWhereCondition(columnOrCondition, operatorOrValue, value)
+    )
     return this
   }
 
@@ -185,13 +141,14 @@ export class UpdateBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   returning(columns: string | string[]): this {
-    this.query.returning = Array.isArray(columns) ? columns : [columns]
+    ReturningClauseHelpers.setReturningColumns(this.query, columns)
     return this
   }
 
   /**
    * Builds the final SQL query and parameters.
    * @returns Object containing SQL string and parameters
+   * @throws {Error} When query validation fails
    */
   protected buildQuery(): { sql: string; params: unknown[] } {
     QueryValidator.validateUpdateQuery(this.query)
@@ -207,37 +164,26 @@ export class UpdateBuilder<T = unknown> extends BaseQueryBuilder<T> {
     )
     parts.push('SET', setClauses.join(', '))
     if (this.query.where && this.query.where.length > 0) {
-      parts.push('WHERE', this.buildWhereConditions(this.query.where))
+      parts.push(
+        'WHERE',
+        WhereConditionHelpers.buildWhereConditions(
+          this.query.where,
+          this.escapeIdentifier.bind(this),
+          this.addParam.bind(this)
+        )
+      )
     }
     if (this.query.returning && this.query.returning.length > 0) {
-      const columns: string = this.query.returning
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push('RETURNING', columns)
+      parts.push(
+        ReturningClauseHelpers.buildReturningClause(
+          this.query.returning,
+          this.escapeIdentifier.bind(this)
+        )
+      )
     }
     return {
       sql: parts.join(' '),
       params: this.params
     }
-  }
-
-  /**
-   * Builds WHERE conditions into SQL string.
-   * @param conditions - Array of WHERE conditions
-   * @returns SQL string for WHERE conditions
-   */
-  private buildWhereConditions(conditions: QueryWhereCondition[]): string {
-    return conditions
-      .map((condition: QueryWhereCondition, index: number) => {
-        const column: string = this.escapeIdentifier(condition.column)
-        const { operator }: { operator: QueryComparisonOperator } = condition
-        const value: string = this.addParam(condition.value)
-        const logical: string = condition.logical ?? 'AND'
-        if (index === 0) {
-          return `${column} ${operator} ${value}`
-        }
-        return `${logical} ${column} ${operator} ${value}`
-      })
-      .join(' ')
   }
 }

@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import type {
   ConnectionBase,
   DatabaseConfig,
@@ -6,11 +7,10 @@ import type {
   QuerySelect,
   QueryInsert,
   QueryUpdate,
-  QueryDelete,
-  QueryWhereCondition,
-  QueryComparisonOperator
+  QueryDelete
 } from '@interfaces/index'
 import { Base } from '@core/dialects/index'
+import { ParameterBuilders, DialectFactory } from '@core/dialects/builders'
 
 /**
  * SQLite database dialect implementation.
@@ -23,8 +23,11 @@ export class Sqlite extends Base {
    * @returns Promise that resolves to a SQLite connection
    */
   async createConnection(config: DatabaseConfig): Promise<ConnectionBase> {
-    const sqlite3: typeof import('sqlite3') = await import('sqlite3')
-    const { open }: { open: typeof import('sqlite').open } = await import('sqlite')
+    const require: ReturnType<typeof createRequire> = createRequire(import.meta.url)
+    const sqlite3: typeof import('sqlite3') = require('sqlite3') as typeof import('sqlite3')
+    const { open }: { open: typeof import('sqlite').open } = require('sqlite') as {
+      open: typeof import('sqlite').open
+    }
     const db: import('sqlite').Database = await open({
       filename: config.database,
       driver: sqlite3.Database
@@ -83,6 +86,9 @@ export class Sqlite extends Base {
   buildSelectQuery(query: QuerySelect): { sql: string; params: unknown[] } {
     const parts: string[] = []
     const params: unknown[] = []
+    if (query.ctes !== undefined && query.ctes.length > 0) {
+      this.buildCTEClause(query, parts, params)
+    }
     this.buildSelectClause(query, parts)
     this.buildFromClause(query, parts)
     this.buildJoinClauses(query, parts, params)
@@ -92,138 +98,12 @@ export class Sqlite extends Base {
     this.buildOrderByClause(query, parts)
     this.buildLimitClause(query, parts)
     this.buildOffsetClause(query, parts)
+    if (query.unions !== undefined && query.unions.length > 0) {
+      this.buildUnionClauses(query, parts, params)
+    }
     return {
       sql: parts.join(' '),
       params
-    }
-  }
-
-  /**
-   * Builds the SELECT clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildSelectClause(query: QuerySelect, parts: string[]): void {
-    parts.push('SELECT')
-    if (query.distinct === true) {
-      parts.push('DISTINCT')
-    }
-    if (query.columns !== undefined && query.columns.length > 0) {
-      const columns: string = query.columns
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push(columns)
-    } else {
-      parts.push('*')
-    }
-  }
-
-  /**
-   * Builds the FROM clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildFromClause(query: QuerySelect, parts: string[]): void {
-    if (query.from !== undefined) {
-      const fromTable: string =
-        typeof query.from === 'string' ? query.from : query.from.alias ?? 'subquery'
-      parts.push('FROM', this.escapeIdentifier(fromTable))
-    }
-  }
-
-  /**
-   * Builds JOIN clauses for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildJoinClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.joins !== undefined) {
-      for (const join of query.joins) {
-        const tableName: string =
-          typeof join.table === 'string' ? join.table : join.table.alias ?? 'subquery'
-        parts.push(join.type, 'JOIN', this.escapeIdentifier(tableName))
-        if (join.on != null && join.on.length > 0) {
-          parts.push('ON', this.buildWhereConditions(join.on, params))
-        }
-      }
-    }
-  }
-
-  /**
-   * Builds the WHERE clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildWhereClause(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.where !== undefined && query.where.length > 0) {
-      parts.push('WHERE', this.buildWhereConditions(query.where, params))
-    }
-  }
-
-  /**
-   * Builds the GROUP BY clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildGroupByClause(query: QuerySelect, parts: string[]): void {
-    if (query.groupBy !== undefined && query.groupBy.length > 0) {
-      const columns: string = query.groupBy
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push('GROUP BY', columns)
-    }
-  }
-
-  /**
-   * Builds the HAVING clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildHavingClause(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.having !== undefined && query.having.length > 0) {
-      parts.push('HAVING', this.buildWhereConditions(query.having, params))
-    }
-  }
-
-  /**
-   * Builds the ORDER BY clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildOrderByClause(query: QuerySelect, parts: string[]): void {
-    if (query.orderBy !== undefined && query.orderBy.length > 0) {
-      const orders: string = query.orderBy
-        .map(
-          (order: { column: string; direction: string }) =>
-            `${this.escapeIdentifier(order.column)} ${order.direction}`
-        )
-        .join(', ')
-      parts.push('ORDER BY', orders)
-    }
-  }
-
-  /**
-   * Builds the LIMIT clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildLimitClause(query: QuerySelect, parts: string[]): void {
-    if (query.limit !== undefined && query.limit > 0) {
-      parts.push('LIMIT', query.limit.toString())
-    }
-  }
-
-  /**
-   * Builds the OFFSET clause for SQLite.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildOffsetClause(query: QuerySelect, parts: string[]): void {
-    if (query.offset !== undefined && query.offset > 0) {
-      parts.push('OFFSET', query.offset.toString())
     }
   }
 
@@ -306,38 +186,6 @@ export class Sqlite extends Base {
   }
 
   /**
-   * Adds a parameter to the params array and returns SQLite placeholder.
-   * @param value - Value to add as parameter
-   * @param params - Array to store parameters
-   * @returns SQLite parameter placeholder string
-   */
-  private addParam(value: unknown, params: unknown[]): string {
-    params.push(value)
-    return '?'
-  }
-
-  /**
-   * Builds WHERE conditions into SQL string for SQLite.
-   * @param conditions - Array of WHERE conditions
-   * @param params - Array to store query parameters
-   * @returns SQL string for WHERE clause
-   */
-  private buildWhereConditions(conditions: QueryWhereCondition[], params: unknown[]): string {
-    return conditions
-      .map((condition: QueryWhereCondition, index: number) => {
-        const column: string = this.escapeIdentifier(condition.column)
-        const { operator }: { operator: QueryComparisonOperator } = condition
-        const value: string = this.addParam(condition.value, params)
-        const logical: string = condition.logical ?? 'AND'
-        if (index === 0) {
-          return `${column} ${operator} ${value}`
-        }
-        return `${logical} ${column} ${operator} ${value}`
-      })
-      .join(' ')
-  }
-
-  /**
    * Escapes a SQLite identifier.
    * @param name - Identifier to escape
    * @returns Escaped identifier string
@@ -356,7 +204,7 @@ export class Sqlite extends Base {
       return 'NULL'
     }
     if (typeof value === 'string') {
-      return `'${value.replace(/'/g, '\'\'')}'`
+      return `'${value.replace(/'/g, "''")}'`
     }
     if (typeof value === 'number' || typeof value === 'boolean') {
       return String(value)
@@ -364,7 +212,7 @@ export class Sqlite extends Base {
     if (value instanceof Date) {
       return `'${value.toISOString()}'`
     }
-    return `'${JSON.stringify(value).replace(/'/g, '\'\'')}'`
+    return `'${JSON.stringify(value).replace(/'/g, "''")}'`
   }
 
   /**
@@ -373,24 +221,7 @@ export class Sqlite extends Base {
    * @returns SQLite-specific data type
    */
   getDataType(type: string): string {
-    const typeMap: Record<string, string> = {
-      string: 'TEXT',
-      number: 'INTEGER',
-      boolean: 'INTEGER',
-      date: 'DATETIME',
-      text: 'TEXT',
-      varchar: 'TEXT',
-      int: 'INTEGER',
-      integer: 'INTEGER',
-      float: 'REAL',
-      real: 'REAL',
-      double: 'REAL',
-      decimal: 'REAL',
-      numeric: 'REAL',
-      blob: 'BLOB',
-      json: 'TEXT'
-    }
-    return typeMap[type.toLowerCase()] ?? 'TEXT'
+    return DialectFactory.createGetDataTypeMethod('sqlite')(type)
   }
 
   /**
@@ -407,5 +238,15 @@ export class Sqlite extends Base {
       return `LIMIT ${limit}`
     }
     return `LIMIT ${limit} OFFSET ${offset}`
+  }
+
+  /**
+   * Adds a parameter to the params array and returns SQLite placeholder.
+   * @param value - Value to add as parameter
+   * @param params - Array to store parameters
+   * @returns SQLite parameter placeholder string
+   */
+  protected override addParam(value: unknown, params: unknown[]): string {
+    return ParameterBuilders.addParam(value, params)
   }
 }

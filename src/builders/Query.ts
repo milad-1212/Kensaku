@@ -4,6 +4,7 @@ import { SqlSanitizer } from '@core/security/index'
 
 /**
  * Abstract base class for all query builders.
+ * @description Provides common functionality for building and executing SQL queries with parameter binding and security features.
  * @template T - Return type of query results
  */
 export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
@@ -23,6 +24,7 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
   /**
    * Executes the query and returns the results.
    * @returns Promise that resolves to an array of results
+   * @throws {Error} When database connection fails or query execution fails
    */
   async execute(): Promise<T[]> {
     const connection: Awaited<ReturnType<ConnectionManager['getConnection']>> =
@@ -42,6 +44,7 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
   /**
    * Returns the SQL string for this query.
    * @returns SQL query string
+   * @throws {Error} When query building fails
    */
   toSQL(): string {
     const { sql }: { sql: string } = this.buildQuery()
@@ -51,6 +54,7 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
   /**
    * Returns the parameters for this query.
    * @returns Array of query parameters
+   * @throws {Error} When query building fails
    */
   toParams(): unknown[] {
     const { params }: { params: unknown[] } = this.buildQuery()

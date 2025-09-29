@@ -64,37 +64,37 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
     - [x] Query string generation
     - [x] Parameter binding
     - [x] Query validation
-  - [ ] **SQL Features**
-    - [ ] **UNION operations**
-      - [ ] UNION
-      - [ ] UNION ALL
-      - [ ] Multiple UNION chaining
-    - [ ] **Common Table Expressions (CTEs)**
-      - [ ] WITH clause
-      - [ ] Recursive CTEs
-      - [ ] Multiple CTEs
-    - [ ] **Subquery conditions**
-      - [ ] EXISTS
-      - [ ] NOT EXISTS
-      - [ ] IN subqueries
-      - [ ] NOT IN subqueries
+  - [x] **SQL Features**
+    - [x] **UNION operations**
+      - [x] UNION
+      - [x] UNION ALL
+      - [x] Multiple UNION chaining
+    - [x] **Common Table Expressions (CTEs)**
+      - [x] WITH clause
+      - [x] Recursive CTEs
+      - [x] Multiple CTEs
+    - [x] **Subquery conditions**
+      - [x] EXISTS
+      - [x] NOT EXISTS
+      - [x] IN subqueries
+      - [x] NOT IN subqueries
     - [ ] **Conditional expressions**
       - [ ] CASE statements
       - [ ] CASE WHEN conditions
       - [ ] COALESCE
       - [ ] NULLIF
-    - [ ] **Window functions**
-      - [ ] ROW_NUMBER()
-      - [ ] RANK()
-      - [ ] DENSE_RANK()
-      - [ ] LAG()/LEAD()
+    - [x] **Window functions**
+      - [x] ROW_NUMBER()
+      - [x] RANK()
+      - [x] DENSE_RANK()
+      - [x] LAG()/LEAD()
       - [ ] FIRST_VALUE()/LAST_VALUE()
       - [ ] NTILE()
       - [ ] CUME_DIST()
       - [ ] PERCENT_RANK()
       - [ ] NTH_VALUE()
-      - [ ] Window partitioning
-      - [ ] Window ordering
+      - [x] Window partitioning
+      - [x] Window ordering
       - [ ] Window frame specifications (ROWS, RANGE, GROUPS)
       - [ ] WINDOW clause definitions
     - [ ] **Set operations**
@@ -180,7 +180,7 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
     - [x] Connection pooling
     - [x] Connection configuration
     - [x] Connection lifecycle management
-    - [ ] Error handling and reconnection
+    - [x] Error handling and reconnection
   - [x] **Dialect System**
     - [x] Base dialect interface
     - [x] SQL syntax variations

@@ -1,9 +1,11 @@
 import type { QueryInsert } from '@interfaces/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
+import { ReturningClauseHelpers } from '@builders/helpers/index'
 
 /**
  * Query builder for INSERT operations with fluent interface.
+ * @description Provides a fluent interface for building INSERT SQL queries with support for single and batch inserts with RETURNING clauses.
  * @template T - Return type of query results
  */
 export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
@@ -36,13 +38,14 @@ export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   returning(columns: string | string[]): this {
-    this.query.returning = Array.isArray(columns) ? columns : [columns]
+    ReturningClauseHelpers.setReturningColumns(this.query, columns)
     return this
   }
 
   /**
    * Builds the final SQL query and parameters.
    * @returns Object containing SQL string and parameters
+   * @throws {Error} When query validation fails
    */
   protected buildQuery(): { sql: string; params: unknown[] } {
     QueryValidator.validateInsertQuery(this.query)
@@ -67,10 +70,12 @@ export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
       parts.push(`(${columnList})`, 'VALUES', `(${values})`)
     }
     if (this.query.returning !== undefined && this.query.returning.length > 0) {
-      const columns: string = this.query.returning
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push('RETURNING', columns)
+      parts.push(
+        ReturningClauseHelpers.buildReturningClause(
+          this.query.returning,
+          this.escapeIdentifier.bind(this)
+        )
+      )
     }
     return {
       sql: parts.join(' '),

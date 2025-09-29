@@ -29,6 +29,7 @@ export class Connection {
   /**
    * Gets a connection from the pool or creates a new one.
    * @returns Promise that resolves to a database connection
+   * @throws {Error} When connection creation fails
    */
   async getConnection(): Promise<ConnectionBase> {
     if (!this.isConnected) {
@@ -73,6 +74,7 @@ export class Connection {
   /**
    * Creates a new database connection.
    * @returns Promise that resolves to a new connection
+   * @throws {Error} When connection creation fails
    */
   private async createConnection(): Promise<ConnectionBase> {
     return this.dialect.createConnection(this.config)
@@ -99,6 +101,7 @@ export class Connection {
 
   /**
    * Initializes the connection pool with minimum connections.
+   * @throws {Error} When connection initialization fails
    */
   private async initialize(): Promise<void> {
     const minConnections: number = this.config.pool?.min ?? 1

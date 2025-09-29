@@ -68,6 +68,7 @@ export class QueryEngine {
    * @param sql - The raw SQL query string
    * @param params - Optional array of parameters for the query
    * @returns Promise that resolves to an array of query results
+   * @throws {Error} When SQL syntax is invalid or query execution fails
    */
   async raw(sql: string, params?: unknown[]): Promise<unknown[]> {
     const connection: ConnectionBase = await this.connectionManager.getConnection()

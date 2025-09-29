@@ -4,13 +4,16 @@ import type {
   QueryComparisonOperator,
   QueryDirectionType,
   QueryJoinType,
-  QuerySubQuery
+  QuerySubQuery,
+  QueryWindowSpec
 } from '@interfaces/index'
+import { WhereConditionHelpers, WhereClauseHelpers } from '@builders/helpers/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
 
 /**
  * Query builder for SELECT operations with fluent interface.
+ * @description Provides a fluent interface for building complex SELECT SQL queries with support for JOINs, WHERE conditions, GROUP BY, HAVING, ORDER BY, LIMIT, OFFSET, window functions, CTEs, and UNIONs.
  * @template T - Return type of query results
  */
 export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
@@ -49,6 +52,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * Specifies the table to select from.
    * @param table - Table name or subquery
    * @returns This builder instance for method chaining
+   * @throws {Error} When table name is empty or subquery is invalid
    */
   from(table: string | QuerySubQuery | SelectBuilder): this {
     if (typeof table === 'string') {
@@ -99,75 +103,12 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     value?: unknown
   ): this {
     this.query.where ??= []
-    if (typeof columnOrCondition === 'string') {
-      if (typeof operatorOrValue === 'string') {
-        this.validateOperator(operatorOrValue)
-        this.query.where.push({
-          column: columnOrCondition,
-          operator: operatorOrValue,
-          value: value ?? null
-        })
-      } else {
-        this.query.where.push({
-          column: columnOrCondition,
-          operator: '=',
-          value: operatorOrValue
-        })
-      }
-    } else {
-      this.query.where.push(columnOrCondition)
+    if (typeof columnOrCondition === 'string' && typeof operatorOrValue === 'string') {
+      this.validateOperator(operatorOrValue)
     }
-    return this
-  }
-
-  /**
-   * Adds an OR WHERE condition to the query.
-   * @param column - Column name
-   * @param operator - Comparison operator
-   * @param value - Value to compare against
-   * @returns This builder instance for method chaining
-   */
-  orWhere(column: string, operator: QueryComparisonOperator, value: unknown): this
-  /**
-   * Adds an OR WHERE condition to the query.
-   * @param condition - Complete WHERE condition object
-   * @returns This builder instance for method chaining
-   */
-  orWhere(condition: QueryWhereCondition): this
-  /**
-   * Adds an OR WHERE condition to the query.
-   * @param column - Column name
-   * @param value - Value to compare against (uses '=' operator)
-   * @returns This builder instance for method chaining
-   */
-  orWhere(column: string, value: unknown): this
-  orWhere(
-    columnOrCondition: string | QueryWhereCondition,
-    operatorOrValue?: QueryComparisonOperator,
-    value?: unknown
-  ): this {
-    this.query.where ??= []
-    let condition: QueryWhereCondition
-    if (typeof columnOrCondition === 'string') {
-      if (typeof operatorOrValue === 'string') {
-        condition = {
-          column: columnOrCondition,
-          operator: operatorOrValue,
-          value: value ?? null,
-          logical: 'OR'
-        }
-      } else {
-        condition = {
-          column: columnOrCondition,
-          operator: '=',
-          value: operatorOrValue,
-          logical: 'OR'
-        }
-      }
-    } else {
-      condition = { ...columnOrCondition, logical: 'OR' }
-    }
-    this.query.where.push(condition)
+    this.query.where.push(
+      WhereClauseHelpers.createWhereCondition(columnOrCondition, operatorOrValue, value)
+    )
     return this
   }
 
@@ -198,27 +139,42 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     value?: unknown
   ): this {
     this.query.where ??= []
-    let condition: QueryWhereCondition
-    if (typeof columnOrCondition === 'string') {
-      if (typeof operatorOrValue === 'string') {
-        condition = {
-          column: columnOrCondition,
-          operator: operatorOrValue,
-          value: value ?? null,
-          logical: 'AND'
-        }
-      } else {
-        condition = {
-          column: columnOrCondition,
-          operator: '=',
-          value: operatorOrValue,
-          logical: 'AND'
-        }
-      }
-    } else {
-      condition = { ...columnOrCondition, logical: 'AND' }
-    }
-    this.query.where.push(condition)
+    this.query.where.push(
+      WhereClauseHelpers.createAndWhereCondition(columnOrCondition, operatorOrValue, value)
+    )
+    return this
+  }
+
+  /**
+   * Adds an OR WHERE condition to the query.
+   * @param column - Column name
+   * @param operator - Comparison operator
+   * @param value - Value to compare against
+   * @returns This builder instance for method chaining
+   */
+  orWhere(column: string, operator: QueryComparisonOperator, value: unknown): this
+  /**
+   * Adds an OR WHERE condition to the query.
+   * @param condition - Complete WHERE condition object
+   * @returns This builder instance for method chaining
+   */
+  orWhere(condition: QueryWhereCondition): this
+  /**
+   * Adds an OR WHERE condition to the query.
+   * @param column - Column name
+   * @param value - Value to compare against (uses '=' operator)
+   * @returns This builder instance for method chaining
+   */
+  orWhere(column: string, value: unknown): this
+  orWhere(
+    columnOrCondition: string | QueryWhereCondition,
+    operatorOrValue?: QueryComparisonOperator,
+    value?: unknown
+  ): this {
+    this.query.where ??= []
+    this.query.where.push(
+      WhereClauseHelpers.createOrWhereCondition(columnOrCondition, operatorOrValue, value)
+    )
     return this
   }
 
@@ -426,7 +382,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     if (this.query.joins != null) {
       for (const join of this.query.joins) {
         const tableName: string =
-          typeof join.table === 'string' ? join.table : (join.table.alias ?? 'subquery')
+          typeof join.table === 'string' ? join.table : join.table.alias ?? 'subquery'
         parts.push(join.type, 'JOIN', this.escapeIdentifier(tableName))
         if (join.on != null && join.on.length > 0) {
           parts.push('ON', this.buildWhereConditions(join.on))
@@ -510,20 +466,12 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns SQL string for WHERE conditions
    */
   private buildWhereConditions(conditions: QueryWhereCondition[]): string {
-    return conditions
-      .map((condition: QueryWhereCondition, index: number) => {
-        const column: string = this.escapeIdentifier(condition.column)
-        const { operator }: { operator: QueryComparisonOperator } = condition
-        const value: string = this.isColumnReference(condition.value)
-          ? this.escapeIdentifier(condition.value as string)
-          : this.addParam(condition.value)
-        const logical: string = condition.logical ?? 'AND'
-        if (index === 0) {
-          return `${column} ${operator} ${value}`
-        }
-        return `${logical} ${column} ${operator} ${value}`
-      })
-      .join(' ')
+    return WhereConditionHelpers.buildWhereConditions(
+      conditions,
+      this.escapeIdentifier.bind(this),
+      this.addParam.bind(this),
+      this.isColumnReference.bind(this)
+    )
   }
 
   /**
@@ -606,9 +554,153 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
   }
 
   /**
+   * Adds a UNION clause to the query.
+   * @param query - Query to union with
+   * @returns This builder instance for method chaining
+   */
+  union(query: SelectBuilder): this {
+    this.query.unions ??= []
+    this.query.unions.push({
+      type: 'UNION',
+      query: query.toQuery()
+    })
+    return this
+  }
+
+  /**
+   * Adds a UNION ALL clause to the query.
+   * @param query - Query to union with
+   * @returns This builder instance for method chaining
+   */
+  unionAll(query: SelectBuilder): this {
+    this.query.unions ??= []
+    this.query.unions.push({
+      type: 'UNION ALL',
+      query: query.toQuery()
+    })
+    return this
+  }
+
+  /**
+   * Adds a Common Table Expression (CTE) to the query.
+   * @param name - CTE name
+   * @param query - CTE query
+   * @returns This builder instance for method chaining
+   */
+  with(name: string, query: SelectBuilder): this {
+    this.query.ctes ??= []
+    this.query.ctes.push({
+      name,
+      query: query.toQuery(),
+      recursive: false
+    })
+    return this
+  }
+
+  /**
+   * Adds a recursive Common Table Expression (CTE) to the query.
+   * @param name - CTE name
+   * @param query - CTE query
+   * @returns This builder instance for method chaining
+   */
+  withRecursive(name: string, query: SelectBuilder): this {
+    this.query.ctes ??= []
+    this.query.ctes.push({
+      name,
+      query: query.toQuery(),
+      recursive: true
+    })
+    return this
+  }
+
+  /**
+   * Adds a ROW_NUMBER() window function to the query.
+   * @param over - Window specification
+   * @returns This builder instance for method chaining
+   */
+  rowNumber(over?: QueryWindowSpec): this {
+    this.query.windowFunctions ??= []
+    this.query.windowFunctions.push({
+      function: 'ROW_NUMBER',
+      ...over !== undefined && { over }
+    })
+    return this
+  }
+
+  /**
+   * Adds a RANK() window function to the query.
+   * @param over - Window specification
+   * @returns This builder instance for method chaining
+   */
+  rank(over?: QueryWindowSpec): this {
+    this.query.windowFunctions ??= []
+    this.query.windowFunctions.push({
+      function: 'RANK',
+      ...over !== undefined && { over }
+    })
+    return this
+  }
+
+  /**
+   * Adds a DENSE_RANK() window function to the query.
+   * @param over - Window specification
+   * @returns This builder instance for method chaining
+   */
+  denseRank(over?: QueryWindowSpec): this {
+    this.query.windowFunctions ??= []
+    this.query.windowFunctions.push({
+      function: 'DENSE_RANK',
+      ...over !== undefined && { over }
+    })
+    return this
+  }
+
+  /**
+   * Adds a LAG() window function to the query.
+   * @param column - Column to lag
+   * @param offset - Offset value
+   * @param over - Window specification
+   * @returns This builder instance for method chaining
+   */
+  lag(column: string, offset: number = 1, over?: QueryWindowSpec): this {
+    this.query.windowFunctions ??= []
+    this.query.windowFunctions.push({
+      function: 'LAG',
+      args: [column, offset.toString()],
+      ...over !== undefined && { over }
+    })
+    return this
+  }
+
+  /**
+   * Adds a LEAD() window function to the query.
+   * @param column - Column to lead
+   * @param offset - Offset value
+   * @param over - Window specification
+   * @returns This builder instance for method chaining
+   */
+  lead(column: string, offset: number = 1, over?: QueryWindowSpec): this {
+    this.query.windowFunctions ??= []
+    this.query.windowFunctions.push({
+      function: 'LEAD',
+      args: [column, offset.toString()],
+      ...over !== undefined && { over }
+    })
+    return this
+  }
+
+  /**
+   * Converts the query to a QuerySelect object.
+   * @returns QuerySelect object
+   */
+  toQuery(): QuerySelect {
+    return { ...this.query }
+  }
+
+  /**
    * Validates that the operator is supported.
    * @param operator - Operator to validate
-   * @throws Error if operator is not supported
+   * @throws {Error} If operator is not supported
    */
   private validateOperator(operator: string): void {
     const validOperators: QueryComparisonOperator[] = [

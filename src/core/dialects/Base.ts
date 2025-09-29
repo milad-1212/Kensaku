@@ -4,8 +4,11 @@ import type {
   QuerySelect,
   QueryInsert,
   QueryUpdate,
-  QueryDelete
+  QueryDelete,
+  QueryCTEClause,
+  QueryWhereCondition
 } from '@interfaces/index'
+import { QueryBuilders, ClauseBuilders, ParameterBuilders } from '@core/dialects/builders'
 
 /**
  * Abstract base class for database dialect implementations.
@@ -86,4 +89,156 @@ export abstract class Base {
    * @returns LIMIT/OFFSET SQL syntax
    */
   abstract getLimitSyntax(limit?: number, offset?: number): string
+
+  /**
+   * Builds CTE (Common Table Expression) clauses.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
+   */
+  protected buildCTEClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    const cteParts: string[] = []
+    for (const cte of query.ctes ?? []) {
+      const cteName: string = this.escapeIdentifier(cte.name)
+      const { sql: cteSql, params: cteParams }: { sql: string; params: unknown[] } =
+        this.buildSelectQuery(cte.query)
+      cteParts.push(`${cteName} AS (${cteSql})`)
+      params.push(...cteParams)
+    }
+    parts.push('WITH')
+    if (query.ctes?.some((cte: QueryCTEClause) => cte.recursive === true) === true) {
+      parts.push('RECURSIVE')
+    }
+    parts.push(cteParts.join(', '))
+  }
+
+  /**
+   * Builds UNION clauses.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
+   */
+  protected buildUnionClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
+    for (const union of query.unions ?? []) {
+      const { sql: unionSql, params: unionParams }: { sql: string; params: unknown[] } =
+        this.buildSelectQuery(union.query)
+      parts.push(union.type, unionSql)
+      params.push(...unionParams)
+    }
+  }
+
+  /**
+   * Builds the SELECT clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   */
+  protected buildSelectClause(query: QuerySelect, parts: string[]): void {
+    QueryBuilders.buildSelectClause(query, parts, this.escapeIdentifier.bind(this))
+  }
+
+  /**
+   * Builds the FROM clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   */
+  protected buildFromClause(query: QuerySelect, parts: string[]): void {
+    QueryBuilders.buildFromClause(query, parts, this.escapeIdentifier.bind(this))
+  }
+
+  /**
+   * Builds JOIN clauses for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
+   */
+  protected buildJoinClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
+    QueryBuilders.buildJoinClauses(
+      query,
+      parts,
+      params,
+      this.escapeIdentifier.bind(this),
+      this.buildWhereConditions.bind(this)
+    )
+  }
+
+  /**
+   * Builds the WHERE clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
+   */
+  protected buildWhereClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    QueryBuilders.buildWhereClause(query, parts, params, this.buildWhereConditions.bind(this))
+  }
+
+  /**
+   * Builds the GROUP BY clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   */
+  protected buildGroupByClause(query: QuerySelect, parts: string[]): void {
+    QueryBuilders.buildGroupByClause(query, parts, this.escapeIdentifier.bind(this))
+  }
+
+  /**
+   * Builds the HAVING clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
+   */
+  protected buildHavingClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    QueryBuilders.buildHavingClause(query, parts, params, this.buildWhereConditions.bind(this))
+  }
+
+  /**
+   * Builds the ORDER BY clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   */
+  protected buildOrderByClause(query: QuerySelect, parts: string[]): void {
+    QueryBuilders.buildOrderByClause(query, parts, this.escapeIdentifier.bind(this))
+  }
+
+  /**
+   * Builds the LIMIT clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   */
+  protected buildLimitClause(query: QuerySelect, parts: string[]): void {
+    QueryBuilders.buildLimitClause(query, parts)
+  }
+
+  /**
+   * Builds the OFFSET clause for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   */
+  protected buildOffsetClause(query: QuerySelect, parts: string[]): void {
+    QueryBuilders.buildOffsetClause(query, parts)
+  }
+
+  /**
+   * Builds WHERE conditions into SQL string for any dialect.
+   * @param conditions - Array of WHERE conditions
+   * @param params - Array to store query parameters
+   * @returns SQL string for WHERE clause
+   */
+  protected buildWhereConditions(conditions: QueryWhereCondition[], params: unknown[]): string {
+    return ClauseBuilders.buildWhereConditions(
+      conditions,
+      params,
+      this.escapeIdentifier.bind(this),
+      this.addParam.bind(this)
+    )
+  }
+
+  /**
+   * Adds a parameter to the params array and returns placeholder.
+   * @param value - Value to add as parameter
+   * @param params - Array to store parameters
+   * @returns Parameter placeholder string
+   */
+  protected addParam(value: unknown, params: unknown[]): string {
+    return ParameterBuilders.addParam(value, params)
+  }
 }

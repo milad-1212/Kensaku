@@ -112,6 +112,67 @@ export interface QueryRawQuery {
 }
 
 /**
+ * Interface for UNION clause structure.
+ */
+export interface QueryUnionClause {
+  /** Type of union operation */
+  type: 'UNION' | 'UNION ALL'
+  /** Query to union with */
+  query: QuerySelect
+}
+
+/**
+ * Interface for Common Table Expression (CTE) structure.
+ */
+export interface QueryCTEClause {
+  /** CTE name */
+  name: string
+  /** CTE query */
+  query: QuerySelect
+  /** Whether this is a recursive CTE */
+  recursive?: boolean
+}
+
+/**
+ * Interface for Window Function structure.
+ */
+export interface QueryWindowFunction {
+  /** Function name */
+  function:
+    | 'ROW_NUMBER'
+    | 'RANK'
+    | 'DENSE_RANK'
+    | 'LAG'
+    | 'LEAD'
+    | 'FIRST_VALUE'
+    | 'LAST_VALUE'
+    | 'NTILE'
+    | 'CUME_DIST'
+    | 'PERCENT_RANK'
+    | 'NTH_VALUE'
+  /** Function arguments */
+  args?: string[]
+  /** Window specification */
+  over?: QueryWindowSpec
+}
+
+/**
+ * Interface for Window specification.
+ */
+export interface QueryWindowSpec {
+  /** Partition by columns */
+  partitionBy?: string[]
+  /** Order by clauses */
+  orderBy?: QueryOrderClause[]
+  /** Window frame specification */
+  frame?: {
+    type: 'ROWS' | 'RANGE' | 'GROUPS'
+    start: string | number
+    end?: string | number
+  }
+}
+
+/**
  * Interface for SELECT query structure.
  */
 export interface QuerySelect {
@@ -135,6 +196,12 @@ export interface QuerySelect {
   offset?: number
   /** Whether to use DISTINCT */
   distinct?: boolean
+  /** UNION clauses */
+  unions?: QueryUnionClause[]
+  /** Common Table Expressions */
+  ctes?: QueryCTEClause[]
+  /** Window functions */
+  windowFunctions?: QueryWindowFunction[]
 }
 
 /**

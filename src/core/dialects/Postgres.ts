@@ -6,11 +6,10 @@ import type {
   QuerySelect,
   QueryInsert,
   QueryUpdate,
-  QueryDelete,
-  QueryWhereCondition,
-  QueryComparisonOperator
+  QueryDelete
 } from '@interfaces/index'
 import { Base } from '@core/dialects/Base'
+import { ParameterBuilders, DialectFactory } from '@core/dialects/builders/index'
 
 /**
  * PostgreSQL database dialect implementation.
@@ -93,6 +92,9 @@ export class Postgres extends Base {
   buildSelectQuery(query: QuerySelect): { sql: string; params: unknown[] } {
     const parts: string[] = []
     const params: unknown[] = []
+    if (query.ctes !== undefined && query.ctes.length > 0) {
+      this.buildCTEClause(query, parts, params)
+    }
     this.buildSelectClause(query, parts)
     this.buildFromClause(query, parts)
     this.buildJoinClauses(query, parts, params)
@@ -102,138 +104,12 @@ export class Postgres extends Base {
     this.buildOrderByClause(query, parts)
     this.buildLimitClause(query, parts)
     this.buildOffsetClause(query, parts)
+    if (query.unions !== undefined && query.unions.length > 0) {
+      this.buildUnionClauses(query, parts, params)
+    }
     return {
       sql: parts.join(' '),
       params
-    }
-  }
-
-  /**
-   * Builds the SELECT clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildSelectClause(query: QuerySelect, parts: string[]): void {
-    parts.push('SELECT')
-    if (query.distinct === true) {
-      parts.push('DISTINCT')
-    }
-    if (query.columns !== undefined && query.columns.length > 0) {
-      const columns: string = query.columns
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push(columns)
-    } else {
-      parts.push('*')
-    }
-  }
-
-  /**
-   * Builds the FROM clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildFromClause(query: QuerySelect, parts: string[]): void {
-    if (query.from !== undefined) {
-      const fromTable: string =
-        typeof query.from === 'string' ? query.from : query.from.alias ?? 'subquery'
-      parts.push('FROM', this.escapeIdentifier(fromTable))
-    }
-  }
-
-  /**
-   * Builds JOIN clauses for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildJoinClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.joins !== undefined) {
-      for (const join of query.joins) {
-        const tableName: string =
-          typeof join.table === 'string' ? join.table : join.table.alias ?? 'subquery'
-        parts.push(join.type, 'JOIN', this.escapeIdentifier(tableName))
-        if (join.on != null && join.on.length > 0) {
-          parts.push('ON', this.buildWhereConditions(join.on, params))
-        }
-      }
-    }
-  }
-
-  /**
-   * Builds the WHERE clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildWhereClause(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.where !== undefined && query.where.length > 0) {
-      parts.push('WHERE', this.buildWhereConditions(query.where, params))
-    }
-  }
-
-  /**
-   * Builds the GROUP BY clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildGroupByClause(query: QuerySelect, parts: string[]): void {
-    if (query.groupBy !== undefined && query.groupBy.length > 0) {
-      const columns: string = query.groupBy
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push('GROUP BY', columns)
-    }
-  }
-
-  /**
-   * Builds the HAVING clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildHavingClause(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.having !== undefined && query.having.length > 0) {
-      parts.push('HAVING', this.buildWhereConditions(query.having, params))
-    }
-  }
-
-  /**
-   * Builds the ORDER BY clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildOrderByClause(query: QuerySelect, parts: string[]): void {
-    if (query.orderBy !== undefined && query.orderBy.length > 0) {
-      const orders: string = query.orderBy
-        .map(
-          (order: { column: string; direction: string }) =>
-            `${this.escapeIdentifier(order.column)} ${order.direction}`
-        )
-        .join(', ')
-      parts.push('ORDER BY', orders)
-    }
-  }
-
-  /**
-   * Builds the LIMIT clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildLimitClause(query: QuerySelect, parts: string[]): void {
-    if (query.limit !== undefined && query.limit > 0) {
-      parts.push('LIMIT', query.limit.toString())
-    }
-  }
-
-  /**
-   * Builds the OFFSET clause for PostgreSQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildOffsetClause(query: QuerySelect, parts: string[]): void {
-    if (query.offset !== undefined && query.offset > 0) {
-      parts.push('OFFSET', query.offset.toString())
     }
   }
 
@@ -385,26 +261,7 @@ export class Postgres extends Base {
    * @returns PostgreSQL-specific data type
    */
   getDataType(type: string): string {
-    const typeMap: Record<string, string> = {
-      VARCHAR: 'VARCHAR',
-      TEXT: 'TEXT',
-      CHAR: 'CHAR',
-      INT: 'INTEGER',
-      BIGINT: 'BIGINT',
-      SMALLINT: 'SMALLINT',
-      DECIMAL: 'DECIMAL',
-      FLOAT: 'REAL',
-      DOUBLE: 'DOUBLE PRECISION',
-      BOOLEAN: 'BOOLEAN',
-      DATE: 'DATE',
-      TIME: 'TIME',
-      TIMESTAMP: 'TIMESTAMP',
-      JSON: 'JSON',
-      JSONB: 'JSONB',
-      UUID: 'UUID',
-      ARRAY: 'ARRAY'
-    }
-    return typeMap[type.toUpperCase()] ?? type.toUpperCase()
+    return DialectFactory.createGetDataTypeMethod('postgres')(type)
   }
 
   /**
@@ -430,29 +287,7 @@ export class Postgres extends Base {
    * @param params - Array to store parameters
    * @returns PostgreSQL parameter placeholder string
    */
-  private addParam(value: unknown, params: unknown[]): string {
-    params.push(value)
-    return `$${params.length}`
-  }
-
-  /**
-   * Builds WHERE conditions into SQL string for PostgreSQL.
-   * @param conditions - Array of WHERE conditions
-   * @param params - Array to store query parameters
-   * @returns SQL string for WHERE clause
-   */
-  private buildWhereConditions(conditions: QueryWhereCondition[], params: unknown[]): string {
-    return conditions
-      .map((condition: QueryWhereCondition, index: number) => {
-        const column: string = this.escapeIdentifier(condition.column)
-        const { operator }: { operator: QueryComparisonOperator } = condition
-        const value: string = this.addParam(condition.value, params)
-        const logical: string = condition.logical ?? 'AND'
-        if (index === 0) {
-          return `${column} ${operator} ${value}`
-        }
-        return `${logical} ${column} ${operator} ${value}`
-      })
-      .join(' ')
+  protected override addParam(value: unknown, params: unknown[]): string {
+    return ParameterBuilders.addParamPostgres(value, params)
   }
 }

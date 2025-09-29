@@ -6,11 +6,10 @@ import type {
   QuerySelect,
   QueryInsert,
   QueryUpdate,
-  QueryDelete,
-  QueryWhereCondition,
-  QueryComparisonOperator
+  QueryDelete
 } from '@interfaces/index'
 import { Base } from '@core/dialects/index'
+import { ParameterBuilders, DialectFactory } from '@core/dialects/builders/index'
 import type { FieldPacket } from 'mysql2'
 
 /**
@@ -108,6 +107,9 @@ export class MySql extends Base {
   buildSelectQuery(query: QuerySelect): { sql: string; params: unknown[] } {
     const parts: string[] = []
     const params: unknown[] = []
+    if (query.ctes !== undefined && query.ctes.length > 0) {
+      this.buildCTEClause(query, parts, params)
+    }
     this.buildSelectClause(query, parts)
     this.buildFromClause(query, parts)
     this.buildJoinClauses(query, parts, params)
@@ -117,138 +119,12 @@ export class MySql extends Base {
     this.buildOrderByClause(query, parts)
     this.buildLimitClause(query, parts)
     this.buildOffsetClause(query, parts)
+    if (query.unions !== undefined && query.unions.length > 0) {
+      this.buildUnionClauses(query, parts, params)
+    }
     return {
       sql: parts.join(' '),
       params
-    }
-  }
-
-  /**
-   * Builds the SELECT clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildSelectClause(query: QuerySelect, parts: string[]): void {
-    parts.push('SELECT')
-    if (query.distinct === true) {
-      parts.push('DISTINCT')
-    }
-    if (query.columns !== undefined && query.columns.length > 0) {
-      const columns: string = query.columns
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push(columns)
-    } else {
-      parts.push('*')
-    }
-  }
-
-  /**
-   * Builds the FROM clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildFromClause(query: QuerySelect, parts: string[]): void {
-    if (query.from !== undefined) {
-      const fromTable: string =
-        typeof query.from === 'string' ? query.from : query.from.alias ?? 'subquery'
-      parts.push('FROM', this.escapeIdentifier(fromTable))
-    }
-  }
-
-  /**
-   * Builds JOIN clauses for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildJoinClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.joins != null) {
-      for (const join of query.joins) {
-        const tableName: string =
-          typeof join.table === 'string' ? join.table : join.table.alias ?? 'subquery'
-        parts.push(join.type, 'JOIN', this.escapeIdentifier(tableName))
-        if (join.on != null && join.on.length > 0) {
-          parts.push('ON', this.buildWhereConditions(join.on, params))
-        }
-      }
-    }
-  }
-
-  /**
-   * Builds the WHERE clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildWhereClause(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.where !== undefined && query.where.length > 0) {
-      parts.push('WHERE', this.buildWhereConditions(query.where, params))
-    }
-  }
-
-  /**
-   * Builds the GROUP BY clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildGroupByClause(query: QuerySelect, parts: string[]): void {
-    if (query.groupBy !== undefined && query.groupBy.length > 0) {
-      const columns: string = query.groupBy
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
-      parts.push('GROUP BY', columns)
-    }
-  }
-
-  /**
-   * Builds the HAVING clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
-   */
-  private buildHavingClause(query: QuerySelect, parts: string[], params: unknown[]): void {
-    if (query.having !== undefined && query.having.length > 0) {
-      parts.push('HAVING', this.buildWhereConditions(query.having, params))
-    }
-  }
-
-  /**
-   * Builds the ORDER BY clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildOrderByClause(query: QuerySelect, parts: string[]): void {
-    if (query.orderBy !== undefined && query.orderBy.length > 0) {
-      const orders: string = query.orderBy
-        .map(
-          (order: { column: string; direction: string }) =>
-            `${this.escapeIdentifier(order.column)} ${order.direction}`
-        )
-        .join(', ')
-      parts.push('ORDER BY', orders)
-    }
-  }
-
-  /**
-   * Builds the LIMIT clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildLimitClause(query: QuerySelect, parts: string[]): void {
-    if (query.limit !== undefined && query.limit > 0) {
-      parts.push('LIMIT', query.limit.toString())
-    }
-  }
-
-  /**
-   * Builds the OFFSET clause for MySQL.
-   * @param query - SELECT query object
-   * @param parts - Array to store SQL parts
-   */
-  private buildOffsetClause(query: QuerySelect, parts: string[]): void {
-    if (query.offset !== undefined && query.offset > 0) {
-      parts.push('OFFSET', query.offset.toString())
     }
   }
 
@@ -380,27 +256,7 @@ export class MySql extends Base {
    * @returns MySQL-specific data type
    */
   getDataType(type: string): string {
-    const typeMap: Record<string, string> = {
-      VARCHAR: 'VARCHAR(255)',
-      TEXT: 'TEXT',
-      CHAR: 'CHAR(1)',
-      INT: 'INT',
-      BIGINT: 'BIGINT',
-      SMALLINT: 'SMALLINT',
-      TINYINT: 'TINYINT',
-      DECIMAL: 'DECIMAL(10,2)',
-      FLOAT: 'FLOAT',
-      DOUBLE: 'DOUBLE',
-      BOOLEAN: 'BOOLEAN',
-      DATE: 'DATE',
-      TIME: 'TIME',
-      TIMESTAMP: 'TIMESTAMP',
-      DATETIME: 'DATETIME',
-      JSON: 'JSON',
-      UUID: 'CHAR(36)',
-      ARRAY: 'JSON'
-    }
-    return typeMap[type.toUpperCase()] ?? type.toUpperCase()
+    return DialectFactory.createGetDataTypeMethod('mysql')(type)
   }
 
   /**
@@ -421,34 +277,12 @@ export class MySql extends Base {
   }
 
   /**
-   * Adds a parameter to the params array and returns placeholder.
+   * Adds a parameter to the params array and returns MySQL placeholder.
    * @param value - Value to add as parameter
    * @param params - Array to store parameters
    * @returns Parameter placeholder string
    */
-  private addParam(value: unknown, params: unknown[]): string {
-    params.push(value)
-    return '?'
-  }
-
-  /**
-   * Builds WHERE conditions into SQL string for MySQL.
-   * @param conditions - Array of WHERE conditions
-   * @param params - Array to store query parameters
-   * @returns SQL string for WHERE clause
-   */
-  private buildWhereConditions(conditions: QueryWhereCondition[], params: unknown[]): string {
-    return conditions
-      .map((condition: QueryWhereCondition, index: number) => {
-        const column: string = this.escapeIdentifier(condition.column)
-        const { operator }: { operator: QueryComparisonOperator } = condition
-        const value: string = this.addParam(condition.value, params)
-        const logical: string = condition.logical ?? 'AND'
-        if (index === 0) {
-          return `${column} ${operator} ${value}`
-        }
-        return `${logical} ${column} ${operator} ${value}`
-      })
-      .join(' ')
+  protected override addParam(value: unknown, params: unknown[]): string {
+    return ParameterBuilders.addParam(value, params)
   }
 }
