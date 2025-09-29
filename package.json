@@ -1,0 +1,90 @@
+{
+  "name": "@neabyte/kensaku",
+  "version": "1.0.0",
+  "description": "A TypeScript query builder for SQL databases with compile-time type safety and multi-database support",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias -f -fe .js && npm run minify",
+    "minify": "find dist -name '*.js' -exec terser {} --compress --mangle -o {} \\;",
+    "dev": "tsc --watch",
+    "lint": "eslint src/**/**/**/**/*.ts",
+    "lint:fix": "eslint src/**/**/**/**/*.ts --fix",
+    "format": "prettier --write src/**/**/**/**/*.ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "type-check": "tsc --noEmit",
+    "check-all": "npm run lint && npm run type-check"
+  },
+  "keywords": [
+    "typescript",
+    "sql",
+    "query-builder",
+    "database",
+    "postgresql",
+    "mysql",
+    "sqlite",
+    "orm",
+    "knex",
+    "prisma",
+    "typeorm",
+    "sequelize",
+    "db",
+    "schema",
+    "migration",
+    "transaction",
+    "join",
+    "select",
+    "insert",
+    "update",
+    "delete"
+  ],
+  "author": {
+    "name": "NeaByteLab",
+    "email": "me@neabyte.com",
+    "url": "https://github.com/NeaByteLab"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NeaByteLab/Kensaku.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NeaByteLab/Kensaku/issues"
+  },
+  "homepage": "https://github.com/NeaByteLab/Kensaku#readme",
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.44.1",
+    "@typescript-eslint/parser": "^8.44.1",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-security": "^3.0.1",
+    "eslint-plugin-sonarjs": "^3.0.5",
+    "prettier": "^3.6.2",
+    "terser": "^5.44.0",
+    "tsc-alias": "^1.8.16",
+    "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

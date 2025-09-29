@@ -1,0 +1,295 @@
+# Kensaku (検索)
+
+TypeScript SQL query builder with type safety and multi-database support. Provides a fluent API for building SQL queries programmatically across PostgreSQL, MySQL, and SQLite databases.
+
+## 🗺️ Roadmap
+- [ ] Base Architecture
+- [ ] Query Builder
+  - [ ] **SELECT queries**
+    - [ ] Basic select with columns
+    - [ ] Select with table aliases
+    - [ ] Select with column aliases
+    - [ ] Select distinct
+    - [ ] Select with aggregations (COUNT, SUM, AVG, etc.)
+    - [ ] Advanced aggregations (STDDEV, VARIANCE, PERCENTILE_CONT)
+    - [ ] Statistical functions (MODE, GROUP_CONCAT, STRING_AGG)
+    - [ ] Array aggregations (ARRAY_AGG, JSON_AGG)
+  - [ ] **FROM clause**
+    - [ ] Single table selection
+    - [ ] Table aliases
+    - [ ] Subqueries in FROM
+  - [ ] **WHERE conditions**
+    - [ ] Basic where clauses
+    - [ ] Multiple where conditions (AND/OR)
+    - [ ] Where with operators (=, !=, >, <, >=, <=, LIKE, IN, BETWEEN)
+    - [ ] Where with NULL checks
+    - [ ] Where with raw SQL
+    - [ ] Advanced operators (IS DISTINCT FROM, ILIKE, SIMILAR TO)
+    - [ ] Regex operators (REGEXP, RLIKE, GLOB)
+    - [ ] Pattern matching operators
+  - [ ] **JOIN operations**
+    - [ ] INNER JOIN
+    - [ ] LEFT JOIN
+    - [ ] RIGHT JOIN
+    - [ ] FULL OUTER JOIN
+    - [ ] CROSS JOIN
+    - [ ] Join with conditions
+  - [ ] **GROUP BY & HAVING**
+    - [ ] Group by single/multiple columns
+    - [ ] Having conditions
+    - [ ] Group by with aggregations
+  - [ ] **ORDER BY**
+    - [ ] Order by single/multiple columns
+    - [ ] ASC/DESC ordering
+    - [ ] Order by with expressions
+  - [ ] **LIMIT & OFFSET**
+    - [ ] Limit results
+    - [ ] Offset for pagination
+    - [ ] Limit with offset
+  - [ ] **INSERT queries**
+    - [ ] Single row insert
+    - [ ] Multiple row insert
+    - [ ] Insert with returning clause
+  - [ ] **UPDATE queries**
+    - [ ] Update with where conditions
+    - [ ] Update multiple columns
+    - [ ] Update with returning clause
+  - [ ] **DELETE queries**
+    - [ ] Delete with where conditions
+    - [ ] Delete with returning clause
+  - [ ] **Raw SQL support**
+    - [ ] Raw SQL injection
+    - [ ] Raw expressions in queries
+  - [ ] **Query execution**
+    - [ ] Query string generation
+    - [ ] Parameter binding
+    - [ ] Query validation
+  - [ ] **SQL Features**
+    - [ ] **UNION operations**
+      - [ ] UNION
+      - [ ] UNION ALL
+      - [ ] Multiple UNION chaining
+    - [ ] **Common Table Expressions (CTEs)**
+      - [ ] WITH clause
+      - [ ] Recursive CTEs
+      - [ ] Multiple CTEs
+    - [ ] **Subquery conditions**
+      - [ ] EXISTS
+      - [ ] NOT EXISTS
+      - [ ] IN subqueries
+      - [ ] NOT IN subqueries
+    - [ ] **Conditional expressions**
+      - [ ] CASE statements
+      - [ ] CASE WHEN conditions
+      - [ ] COALESCE
+      - [ ] NULLIF
+    - [ ] **Window functions**
+      - [ ] ROW_NUMBER()
+      - [ ] RANK()
+      - [ ] DENSE_RANK()
+      - [ ] LAG()/LEAD()
+      - [ ] FIRST_VALUE()/LAST_VALUE()
+      - [ ] NTILE()
+      - [ ] CUME_DIST()
+      - [ ] PERCENT_RANK()
+      - [ ] NTH_VALUE()
+      - [ ] Window partitioning
+      - [ ] Window ordering
+      - [ ] Window frame specifications (ROWS, RANGE, GROUPS)
+      - [ ] WINDOW clause definitions
+    - [ ] **Set operations**
+      - [ ] INTERSECT
+      - [ ] EXCEPT/MINUS
+      - [ ] Multiple set operations chaining
+    - [ ] **Advanced Query Features**
+      - [ ] LATERAL JOINs (PostgreSQL)
+      - [ ] PIVOT/UNPIVOT operations
+      - [ ] MERGE/UPSERT statements
+      - [ ] ON CONFLICT handling (PostgreSQL)
+      - [ ] WITH ORDINALITY for table functions
+      - [ ] Bulk operations (COPY, LOAD DATA)
+      - [ ] Full-text search functions
+      - [ ] Search ranking and relevance
+      - [ ] Search configuration
+    - [ ] **Stored procedures and functions**
+      - [ ] Call stored procedures
+      - [ ] Call database functions
+      - [ ] Function parameters binding
+      - [ ] Return value handling
+    - [ ] **Views**
+      - [ ] CREATE VIEW
+      - [ ] DROP VIEW
+      - [ ] ALTER VIEW
+      - [ ] Materialized views
+      - [ ] View dependencies
+    - [ ] **Triggers**
+      - [ ] CREATE TRIGGER
+      - [ ] DROP TRIGGER
+      - [ ] ALTER TRIGGER
+      - [ ] Trigger events (INSERT, UPDATE, DELETE)
+      - [ ] Trigger timing (BEFORE, AFTER)
+    - [ ] **Query analysis**
+      - [ ] EXPLAIN queries
+      - [ ] Query execution plans
+      - [ ] Performance analysis
+      - [ ] Query optimization hints
+    - [ ] **JSON Operations**
+      - [ ] JSON path queries (->, ->>)
+      - [ ] JSON functions (json_extract, json_set, etc.)
+      - [ ] JSON aggregation functions
+      - [ ] JSON validation
+    - [ ] **Array Operations**
+      - [ ] Array functions (array_agg, unnest, etc.)
+      - [ ] Array operators (@>, <@, &&)
+      - [ ] Array indexing
+      - [ ] Array slicing
+    - [ ] **Prepared statements**
+      - [ ] Prepare statements
+      - [ ] Execute prepared statements
+      - [ ] Deallocate prepared statements
+      - [ ] Parameter binding optimization
+- [ ] **Database Support**
+  - [ ] **PostgreSQL**
+    - [ ] Connection handling
+    - [ ] Dialect-specific SQL generation
+    - [ ] Data type mapping
+    - [ ] Transaction support
+    - [ ] Custom data types (UUID, ENUM, etc.)
+    - [ ] Advanced indexing (GIN, GiST, etc.)
+    - [ ] Partitioning support
+    - [ ] PostgreSQL extensions
+  - [ ] **MySQL**
+    - [ ] Connection handling
+    - [ ] Dialect-specific SQL generation
+    - [ ] Data type mapping
+    - [ ] Transaction support
+    - [ ] AUTO_INCREMENT handling
+    - [ ] MySQL-specific functions
+    - [ ] MySQL storage engines
+    - [ ] MySQL-specific data types
+  - [ ] **SQLite**
+    - [ ] Connection handling
+    - [ ] Dialect-specific SQL generation
+    - [ ] Data type mapping
+    - [ ] Transaction support
+    - [ ] FTS (Full-Text Search) modules
+    - [ ] SQLite-specific pragmas
+    - [ ] SQLite extensions
+    - [ ] SQLite-specific functions
+  - [ ] **Connection Management**
+    - [ ] Connection pooling
+    - [ ] Connection configuration
+    - [ ] Connection lifecycle management
+    - [ ] Error handling and reconnection
+  - [ ] **Dialect System**
+    - [ ] Base dialect interface
+    - [ ] SQL syntax variations
+    - [ ] Function name differences
+    - [ ] Data type differences
+- [ ] **Schema Builder**
+  - [ ] **Table Operations**
+    - [ ] Create table
+    - [ ] Drop table
+    - [ ] Rename table
+    - [ ] Truncate table
+    - [ ] Create partitioned table
+    - [ ] Create table inheritance (PostgreSQL)
+    - [ ] Create generated columns
+    - [ ] Create computed columns
+  - [ ] **Column Operations**
+    - [ ] Add column
+    - [ ] Drop column
+    - [ ] Rename column
+    - [ ] Modify column
+    - [ ] Change column type
+  - [ ] **Index Operations**
+    - [ ] Create index
+    - [ ] Drop index
+    - [ ] Create unique index
+    - [ ] Create composite index
+    - [ ] Create partial index
+    - [ ] Create expression index
+    - [ ] Create full-text index
+    - [ ] Create spatial index
+  - [ ] **Constraint Operations**
+    - [ ] Add primary key
+    - [ ] Drop primary key
+    - [ ] Add foreign key
+    - [ ] Drop foreign key
+    - [ ] Add unique constraint
+    - [ ] Drop unique constraint
+    - [ ] Add check constraint
+    - [ ] Drop check constraint
+  - [ ] **Data Types**
+    - [ ] String types (VARCHAR, TEXT, CHAR)
+    - [ ] Numeric types (INT, BIGINT, DECIMAL, FLOAT)
+    - [ ] Date/time types (DATE, TIME, TIMESTAMP)
+    - [ ] Boolean types
+    - [ ] JSON types
+    - [ ] Array types
+    - [ ] UUID types
+    - [ ] ENUM types
+    - [ ] Custom data types
+    - [ ] Spatial types (GEOGRAPHY, GEOMETRY)
+    - [ ] Full-text types (TSVECTOR, TSQUERY)
+    - [ ] Interval types
+    - [ ] Bit types (BIT, BIT VARYING)
+    - [ ] Money types
+    - [ ] Network types (INET, CIDR)
+  - [ ] **Column Modifiers**
+    - [ ] NOT NULL constraint
+    - [ ] DEFAULT values
+    - [ ] AUTO_INCREMENT/SERIAL
+    - [ ] Column comments
+  - [ ] **Schema Validation**
+    - [ ] Schema syntax validation
+    - [ ] Cross-database compatibility
+    - [ ] Migration rollback support
+  - [ ] **Migration System**
+    - [ ] Create migrations
+    - [ ] Run migrations
+    - [ ] Rollback migrations
+    - [ ] Migration versioning
+    - [ ] Migration dependencies
+    - [ ] Migration status tracking
+    - [ ] Seed data management
+    - [ ] Migration validation
+- [ ] **Optimization**
+  - [ ] **Connection Optimization**
+    - [ ] Connection pooling
+    - [ ] Connection reuse
+    - [ ] Lazy connection initialization
+    - [ ] Connection health checks
+  - [ ] **Batch Operations**
+    - [ ] Bulk insert operations
+    - [ ] Batch update operations
+    - [ ] Transaction batching
+  - [ ] **Performance Features**
+    - [ ] Query caching
+    - [ ] Result streaming
+    - [ ] Query timeout configuration
+    - [ ] Connection retry logic
+    - [ ] Query result pagination
+    - [ ] Lazy loading support
+    - [ ] Query plan analysis
+    - [ ] Index recommendations
+    - [ ] Connection pool monitoring
+  - [ ] **Security & Compliance**
+    - [ ] SQL injection prevention
+    - [ ] Query sanitization
+    - [ ] Access control integration
+    - [ ] Audit logging
+    - [ ] Parameter validation
+    - [ ] Query whitelisting
+
+---
+
+## 📝 Note
+
+This roadmap is a living document that will evolve as the project develops. Features may be added, removed, or reprioritized based on user feedback, technical requirements, and development capacity. The implementation order and timeline are subject to change.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.
