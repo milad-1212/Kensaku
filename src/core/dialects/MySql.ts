@@ -120,6 +120,24 @@ export class MySql extends Base {
     this.buildOrderByClause(query, parts, params)
     this.buildLimitClause(query, parts, params)
     this.buildOffsetClause(query, parts, params)
+    if (query.pivot) {
+      const pivotClause: string = this.buildPivotClause(query)
+      if (pivotClause) {
+        parts.push(pivotClause)
+      }
+    }
+    if (query.unpivot) {
+      const unpivotClause: string = this.buildUnpivotClause(query)
+      if (unpivotClause) {
+        parts.push(unpivotClause)
+      }
+    }
+    if (query.ordinality) {
+      const ordinalityClause: string = this.buildOrdinalityClause(query)
+      if (ordinalityClause) {
+        parts.push(ordinalityClause)
+      }
+    }
     QueryBuilders.buildSetOperations(
       query,
       parts,

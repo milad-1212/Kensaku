@@ -308,6 +308,12 @@ export interface QuerySelect {
   windowFunctions?: QueryWindowFunction[]
   /** Conditional expressions */
   conditionals?: QueryConditionalExpression[]
+  /** PIVOT operation */
+  pivot?: QueryPivotClause
+  /** UNPIVOT operation */
+  unpivot?: QueryUnpivotClause
+  /** WITH ORDINALITY clause */
+  ordinality?: QueryOrdinalityClause
 }
 
 /**
@@ -408,4 +414,40 @@ export interface QueryWindowSpec {
     end?: string | number
     exclude?: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS'
   }
+}
+
+/**
+ * PIVOT operation clause for transforming rows to columns.
+ */
+export interface QueryPivotClause {
+  /** Column to pivot on */
+  column: string
+  /** Values to create columns for */
+  values: string[]
+  /** Aggregation function and column */
+  aggregate: string
+  /** Optional alias for the pivot result */
+  alias?: string
+}
+
+/**
+ * UNPIVOT operation clause for transforming columns to rows.
+ */
+export interface QueryUnpivotClause {
+  /** Columns to unpivot */
+  columns: string[]
+  /** Name of the value column in the result */
+  valueColumn: string
+  /** Name of the column containing the original column names */
+  nameColumn: string
+}
+
+/**
+ * WITH ORDINALITY clause for table functions.
+ */
+export interface QueryOrdinalityClause {
+  /** Name of the value column */
+  valueColumn: string
+  /** Name of the ordinality column */
+  ordinalityColumn: string
 }

@@ -39,7 +39,21 @@ export const errorMessages: ErrorMap = {
     MERGE_MISSING_WHEN: 'MERGE query must have WHEN MATCHED or WHEN NOT MATCHED clause',
     MERGE_INSERT_DATA_REQUIRED: 'Insert data is required for WHEN NOT MATCHED',
     MERGE_NOT_SUPPORTED:
-      'MERGE queries are not supported in this dialect. Use dialect-specific alternatives'
+      'MERGE queries are not supported in this dialect. Use dialect-specific alternatives',
+    PIVOT_MISSING_COLUMN: 'PIVOT clause must have a column',
+    PIVOT_MISSING_VALUES: 'PIVOT clause must have values',
+    PIVOT_MISSING_AGGREGATE: 'PIVOT clause must have an aggregate function',
+    UNPIVOT_MISSING_COLUMNS: 'UNPIVOT clause must have columns',
+    UNPIVOT_MISSING_VALUE_COLUMN: 'UNPIVOT clause must have a value column name',
+    UNPIVOT_MISSING_NAME_COLUMN: 'UNPIVOT clause must have a name column name',
+    ORDINALITY_MISSING_VALUE_COLUMN: 'WITH ORDINALITY must have a value column name',
+    ORDINALITY_MISSING_ORDINALITY_COLUMN: 'WITH ORDINALITY must have an ordinality column name',
+    PIVOT_NOT_SUPPORTED:
+      'PIVOT operations are not supported in this dialect. Use CASE statements instead.',
+    UNPIVOT_NOT_SUPPORTED:
+      'UNPIVOT operations are not supported in this dialect. Use UNION ALL with CASE statements instead.',
+    ORDINALITY_NOT_SUPPORTED:
+      'WITH ORDINALITY is not supported in this dialect. Use ROW_NUMBER() window function instead.'
   },
   WHERE: {
     INVALID_RAW_CONDITION: 'RAW WHERE condition must have a valid SQL string',

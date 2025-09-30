@@ -103,10 +103,10 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
       - [x] Multiple set operations chaining
     - [x] **Advanced Query Features**
       - [x] LATERAL JOINs (PostgreSQL)
-      - [ ] PIVOT/UNPIVOT operations
+      - [x] PIVOT/UNPIVOT operations
       - [x] MERGE/UPSERT statements
       - [x] ON CONFLICT handling (PostgreSQL)
-      - [ ] WITH ORDINALITY for table functions
+      - [x] WITH ORDINALITY for table functions
       - [ ] Bulk operations (COPY, LOAD DATA)
       - [ ] Full-text search functions
       - [ ] Search ranking and relevance

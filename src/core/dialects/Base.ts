@@ -67,6 +67,39 @@ export abstract class Base {
   abstract buildDeleteQuery(query: QueryDelete): QueryStatement
 
   /**
+   * Builds a PIVOT clause for this dialect.
+   * @param query - SELECT query object
+   * @returns SQL string for PIVOT clause
+   * @throws {Error} When dialect doesn't support PIVOT operations
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildPivotClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.PIVOT_NOT_SUPPORTED)
+  }
+
+  /**
+   * Builds an UNPIVOT clause for this dialect.
+   * @param query - SELECT query object
+   * @returns SQL string for UNPIVOT clause
+   * @throws {Error} When dialect doesn't support UNPIVOT operations
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildUnpivotClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.UNPIVOT_NOT_SUPPORTED)
+  }
+
+  /**
+   * Builds a WITH ORDINALITY clause for this dialect.
+   * @param query - SELECT query object
+   * @returns SQL string for WITH ORDINALITY clause
+   * @throws {Error} When dialect doesn't support WITH ORDINALITY operations
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildOrdinalityClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.ORDINALITY_NOT_SUPPORTED)
+  }
+
+  /**
    * Builds a MERGE query for this dialect.
    * @param query - MERGE query object
    * @returns Object containing SQL string and parameters

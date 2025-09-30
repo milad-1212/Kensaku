@@ -107,6 +107,28 @@ export class Postgres extends Base {
     this.buildOrderByClause(query, parts, params)
     this.buildLimitClause(query, parts, params)
     this.buildOffsetClause(query, parts, params)
+
+    // Add PIVOT/UNPIVOT/WITH ORDINALITY clauses
+    if (query.pivot) {
+      const pivotClause: string = this.buildPivotClause(query)
+      if (pivotClause) {
+        parts.push(pivotClause)
+      }
+    }
+
+    if (query.unpivot) {
+      const unpivotClause: string = this.buildUnpivotClause(query)
+      if (unpivotClause) {
+        parts.push(unpivotClause)
+      }
+    }
+
+    if (query.ordinality) {
+      const ordinalityClause: string = this.buildOrdinalityClause(query)
+      if (ordinalityClause) {
+        parts.push(ordinalityClause)
+      }
+    }
     QueryBuilders.buildSetOperations(
       query,
       parts,
@@ -302,5 +324,61 @@ export class Postgres extends Base {
    */
   protected override addParam(value: unknown, params: unknown[]): string {
     return ParameterBuilders.addParamPostgres(value, params)
+  }
+
+  /**
+   * Builds a PIVOT clause for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for PIVOT clause
+   */
+  override buildPivotClause(query: QuerySelect): string {
+    if (!query.pivot) {
+      return ''
+    }
+    const {
+      column,
+      values,
+      aggregate,
+      alias
+    }: { column: string; values: string[]; aggregate: string; alias?: string } = query.pivot
+    const pivotColumns: string = values
+      .map((value: string) => this.escapeIdentifier(value))
+      .join(', ')
+    const pivotAlias: string = alias !== undefined ? ` AS ${this.escapeIdentifier(alias)}` : ''
+    return `PIVOT (${aggregate} FOR ${this.escapeIdentifier(column)} IN (${pivotColumns}))${pivotAlias}`
+  }
+
+  /**
+   * Builds an UNPIVOT clause for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for UNPIVOT clause
+   */
+  override buildUnpivotClause(query: QuerySelect): string {
+    if (!query.unpivot) {
+      return ''
+    }
+    const {
+      columns,
+      valueColumn,
+      nameColumn
+    }: { columns: string[]; valueColumn: string; nameColumn: string } = query.unpivot
+    const unpivotColumns: string = columns
+      .map((col: string) => this.escapeIdentifier(col))
+      .join(', ')
+    return `UNPIVOT (${this.escapeIdentifier(valueColumn)} FOR ${this.escapeIdentifier(nameColumn)} IN (${unpivotColumns}))`
+  }
+
+  /**
+   * Builds a WITH ORDINALITY clause for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for WITH ORDINALITY clause
+   */
+  override buildOrdinalityClause(query: QuerySelect): string {
+    if (!query.ordinality) {
+      return ''
+    }
+    const { valueColumn, ordinalityColumn }: { valueColumn: string; ordinalityColumn: string } =
+      query.ordinality
+    return `WITH ORDINALITY AS ${this.escapeIdentifier(valueColumn)}, ${this.escapeIdentifier(ordinalityColumn)}`
   }
 }

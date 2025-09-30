@@ -1,6 +1,6 @@
 import type { QuerySelect, QuerySubQuery, QueryStatement } from '@interfaces/index'
 import { BaseQueryBuilder } from '@builders/Query'
-import { SelectMixin } from '@builders/mixins/index'
+import { SelectMixin, PivotMixin } from '@builders/mixins/index'
 import { Base } from '@core/dialects/index'
 import { QueryValidator } from '@core/security/index'
 
@@ -77,5 +77,41 @@ export abstract class SelectBaseBuilder<T = unknown> extends BaseQueryBuilder<T>
    */
   toQuery(): QuerySelect {
     return { ...this.query }
+  }
+
+  /**
+   * Adds a PIVOT operation to transform rows to columns.
+   * @param column - Column to pivot on
+   * @param values - Values to create columns for
+   * @param aggregate - Aggregation function and column
+   * @param alias - Optional alias for the pivot result
+   * @returns This builder instance for method chaining
+   */
+  pivot(column: string, values: string[], aggregate: string, alias?: string): this {
+    PivotMixin.addPivot(this.query, column, values, aggregate, alias)
+    return this
+  }
+
+  /**
+   * Adds an UNPIVOT operation to transform columns to rows.
+   * @param columns - Columns to unpivot
+   * @param valueColumn - Name of the value column in the result
+   * @param nameColumn - Name of the column containing the original column names
+   * @returns This builder instance for method chaining
+   */
+  unpivot(columns: string[], valueColumn: string, nameColumn: string): this {
+    PivotMixin.addUnpivot(this.query, columns, valueColumn, nameColumn)
+    return this
+  }
+
+  /**
+   * Adds a WITH ORDINALITY clause for table functions.
+   * @param valueColumn - Name of the value column
+   * @param ordinalityColumn - Name of the ordinality column
+   * @returns This builder instance for method chaining
+   */
+  withOrdinality(valueColumn: string, ordinalityColumn: string): this {
+    PivotMixin.addOrdinality(this.query, valueColumn, ordinalityColumn)
+    return this
   }
 }
