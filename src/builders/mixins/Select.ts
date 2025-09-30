@@ -1,4 +1,5 @@
 import type { QuerySelect, QuerySubQuery } from '@interfaces/index'
+import { errorMessages } from '@constants/index'
 
 /**
  * Helper class for SELECT query operations.
@@ -39,12 +40,12 @@ export class SelectMixin {
   static setFrom(query: QuerySelect, table: string | QuerySubQuery): void {
     if (typeof table === 'string') {
       if (!table || table.trim() === '') {
-        throw new Error('Table name cannot be empty')
+        throw new Error(errorMessages.VALIDATION.EMPTY_TABLE)
       }
       query.from = table
     } else {
       if (!table?.query) {
-        throw new Error('Subquery cannot be empty')
+        throw new Error(errorMessages.VALIDATION.EMPTY_SUBQUERY)
       }
       query.from = table
     }
@@ -70,6 +71,25 @@ export class SelectMixin {
     query.orderBy.push({
       column,
       direction
+    })
+  }
+
+  /**
+   * Adds an ORDER BY expression to the query.
+   * @param query - Query object to modify
+   * @param expression - SQL expression to order by
+   * @param direction - Sort direction
+   */
+  static addOrderByExpression(
+    query: QuerySelect,
+    expression: string,
+    direction: 'ASC' | 'DESC' = 'ASC'
+  ): void {
+    query.orderBy ??= []
+    query.orderBy.push({
+      column: expression,
+      direction,
+      isExpression: true
     })
   }
 

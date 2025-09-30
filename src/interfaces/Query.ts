@@ -44,6 +44,57 @@ export type QueryComparisonOperator =
   | 'IS NOT NULL'
   | 'EXISTS'
   | 'NOT EXISTS'
+  | 'IS DISTINCT FROM'
+  | 'SIMILAR TO'
+  | 'REGEXP'
+  | 'RLIKE'
+  | 'GLOB'
+  | 'RAW'
+
+/**
+ * Supported aggregation functions.
+ */
+export type QueryAggregationFunction =
+  | 'COUNT'
+  | 'SUM'
+  | 'AVG'
+  | 'MAX'
+  | 'MIN'
+  | 'STDDEV'
+  | 'STDDEV_POP'
+  | 'STDDEV_SAMP'
+  | 'VARIANCE'
+  | 'VAR_POP'
+  | 'VAR_SAMP'
+  | 'PERCENTILE_CONT'
+  | 'PERCENTILE_DISC'
+  | 'MODE'
+  | 'GROUP_CONCAT'
+  | 'STRING_AGG'
+  | 'ARRAY_AGG'
+  | 'JSON_AGG'
+  | 'JSON_OBJECT_AGG'
+  | 'JSON_ARRAY_AGG'
+
+/**
+ * Interface for aggregation expressions.
+ */
+export interface QueryAggregationExpression {
+  /** Aggregation function name */
+  function: QueryAggregationFunction
+  /** Column or expression to aggregate */
+  column: string
+  /** Optional alias for the aggregation */
+  alias?: string
+  /** Optional DISTINCT modifier */
+  distinct?: boolean
+  /** Optional ORDER BY for string aggregations */
+  orderBy?: QueryOrderClause[]
+  /** Optional separator for string aggregations */
+  separator?: string
+  /** Optional percentile value for percentile functions */
+  percentile?: number
+}
 
 /**
  * Interface for DELETE query structure.
@@ -95,10 +146,12 @@ export type QueryDirectionType = 'ASC' | 'DESC'
  * Interface for ORDER BY clause structure.
  */
 export interface QueryOrderClause {
-  /** Column name to order by */
+  /** Column name or expression to order by */
   column: string
   /** Sort direction */
   direction: QueryDirectionType
+  /** Whether this is a raw expression (not just a column) */
+  isExpression?: boolean
 }
 
 /**
@@ -178,6 +231,8 @@ export interface QueryWindowSpec {
 export interface QuerySelect {
   /** Columns to select */
   columns?: string[]
+  /** Aggregation expressions */
+  aggregations?: QueryAggregationExpression[]
   /** Table or subquery to select from */
   from?: string | QuerySubQuery
   /** WHERE conditions */

@@ -5,10 +5,12 @@ import type {
   QueryDirectionType,
   QuerySubQuery,
   QueryWindowSpec,
-  QueryWindowFunction
+  QueryWindowFunction,
+  QueryAggregationExpression
 } from '@interfaces/index'
 import { WhereConditionHelper } from '@builders/helpers/index'
 import {
+  AggregationMixin,
   CteMixin,
   HavingMixin,
   JoinMixin,
@@ -20,6 +22,7 @@ import {
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
 import { Base } from '@core/dialects/index'
+import { errorMessages } from '@constants/index'
 
 /**
  * Query builder for SELECT operations with fluent interface.
@@ -169,6 +172,48 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
   }
 
   /**
+   * Adds a raw SQL WHERE condition to the query.
+   * @param sql - Raw SQL condition
+   * @param params - Optional parameters for the SQL
+   * @returns This builder instance for method chaining
+   */
+  whereRaw(sql: string, params?: unknown[]): this {
+    if (sql == null || sql === '') {
+      throw new Error(errorMessages.VALIDATION.EMPTY_RAW_SQL)
+    }
+    WhereMixin.addRawWhereCondition(this.query, sql, params)
+    return this
+  }
+
+  /**
+   * Adds a raw SQL AND WHERE condition to the query.
+   * @param sql - Raw SQL condition
+   * @param params - Optional parameters for the SQL
+   * @returns This builder instance for method chaining
+   */
+  andWhereRaw(sql: string, params?: unknown[]): this {
+    if (sql == null || sql === '') {
+      throw new Error(errorMessages.VALIDATION.EMPTY_RAW_SQL)
+    }
+    WhereMixin.addRawAndWhereCondition(this.query, sql, params)
+    return this
+  }
+
+  /**
+   * Adds a raw SQL OR WHERE condition to the query.
+   * @param sql - Raw SQL condition
+   * @param params - Optional parameters for the SQL
+   * @returns This builder instance for method chaining
+   */
+  orWhereRaw(sql: string, params?: unknown[]): this {
+    if (sql == null || sql === '') {
+      throw new Error(errorMessages.VALIDATION.EMPTY_RAW_SQL)
+    }
+    WhereMixin.addRawOrWhereCondition(this.query, sql, params)
+    return this
+  }
+
+  /**
    * Adds an INNER JOIN to the query.
    * @param table - Table to join
    * @param on - Join conditions
@@ -262,7 +307,21 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   orderBy(column: string, direction: QueryDirectionType = 'ASC'): this {
+    if (direction !== 'ASC' && direction !== 'DESC') {
+      throw new Error(errorMessages.VALIDATION.INVALID_ORDER_DIRECTION)
+    }
     SelectMixin.addOrderBy(this.query, column, direction)
+    return this
+  }
+
+  /**
+   * Adds an ORDER BY expression to the query.
+   * @param expression - SQL expression to order by
+   * @param direction - Sort direction
+   * @returns This builder instance for method chaining
+   */
+  orderByExpression(expression: string, direction: QueryDirectionType = 'ASC'): this {
+    SelectMixin.addOrderByExpression(this.query, expression, direction)
     return this
   }
 
@@ -320,18 +379,26 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     if (this.query.distinct === true) {
       parts.push('DISTINCT')
     }
+    const selectParts: string[] = []
     if (this.query.columns != null && this.query.columns.length > 0) {
       const columns: string = this.escapeColumnExpressionList(this.query.columns)
-      parts.push(columns)
-    } else {
-      parts.push('*')
+      selectParts.push(columns)
+    } else if (this.query.aggregations == null || this.query.aggregations.length === 0) {
+      selectParts.push('*')
+    }
+    if (this.query.aggregations != null && this.query.aggregations.length > 0) {
+      const aggregations: string = this.query.aggregations
+        .map((agg: QueryAggregationExpression) => this.buildAggregationExpression(agg))
+        .join(', ')
+      selectParts.push(aggregations)
     }
     if (this.query.windowFunctions != null && this.query.windowFunctions.length > 0) {
       const windowFunctions: string = this.query.windowFunctions
         .map((wf: QueryWindowFunction) => this.buildWindowFunction(wf))
         .join(', ')
-      parts.push(',', windowFunctions)
+      selectParts.push(windowFunctions)
     }
+    parts.push(selectParts.join(', '))
   }
 
   /**
@@ -409,10 +476,11 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
   private buildOrderByClause(parts: string[]): void {
     if (this.query.orderBy != null && this.query.orderBy.length > 0) {
       const orders: string = this.query.orderBy
-        .map(
-          (order: { column: string; direction: string }) =>
-            `${this.escapeIdentifier(order.column)} ${order.direction}`
-        )
+        .map((order: { column: string; direction: string; isExpression?: boolean }) => {
+          const columnExpr: string =
+            order.isExpression === true ? order.column : this.escapeIdentifier(order.column)
+          return `${columnExpr} ${order.direction}`
+        })
         .join(', ')
       parts.push('ORDER BY', orders)
     }
@@ -513,6 +581,127 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
   }
 
   /**
+   * Builds an aggregation expression SQL string.
+   * @param aggregation - Aggregation expression object
+   * @returns SQL string for the aggregation expression
+   */
+  private buildAggregationExpression(aggregation: QueryAggregationExpression): string {
+    let sql: string = aggregation.function
+    if (this.isPercentileFunction(aggregation.function)) {
+      sql += this.buildPercentileExpression(aggregation)
+    } else if (this.isStringAggregationFunction(aggregation.function)) {
+      sql += this.buildStringAggregationExpression(aggregation)
+    } else if (this.isArrayAggregationFunction(aggregation.function)) {
+      sql += this.buildArrayAggregationExpression(aggregation)
+    } else {
+      sql += this.buildStandardAggregationExpression(aggregation)
+    }
+    if (aggregation.alias != null) {
+      sql += ` AS ${this.escapeIdentifier(aggregation.alias)}`
+    }
+    return sql
+  }
+
+  /**
+   * Checks if the function is a percentile function.
+   * @param func - Function name
+   * @returns True if it's a percentile function
+   */
+  private isPercentileFunction(func: string): boolean {
+    return func === 'PERCENTILE_CONT' || func === 'PERCENTILE_DISC'
+  }
+
+  /**
+   * Checks if the function is a string aggregation function.
+   * @param func - Function name
+   * @returns True if it's a string aggregation function
+   */
+  private isStringAggregationFunction(func: string): boolean {
+    return func === 'GROUP_CONCAT' || func === 'STRING_AGG'
+  }
+
+  /**
+   * Checks if the function is an array aggregation function.
+   * @param func - Function name
+   * @returns True if it's an array aggregation function
+   */
+  private isArrayAggregationFunction(func: string): boolean {
+    return func === 'ARRAY_AGG' || func === 'JSON_AGG'
+  }
+
+  /**
+   * Builds percentile expression SQL.
+   * @param aggregation - Aggregation expression object
+   * @returns SQL string for percentile expression
+   */
+  private buildPercentileExpression(aggregation: QueryAggregationExpression): string {
+    if (aggregation.percentile == null) {
+      throw new Error(errorMessages.AGGREGATION.PERCENTILE_REQUIRED)
+    }
+    return `(${aggregation.percentile}) WITHIN GROUP (ORDER BY ${this.escapeIdentifier(aggregation.column)})`
+  }
+
+  /**
+   * Builds string aggregation expression SQL.
+   * @param aggregation - Aggregation expression object
+   * @returns SQL string for string aggregation expression
+   */
+  private buildStringAggregationExpression(aggregation: QueryAggregationExpression): string {
+    const distinctModifier: string = aggregation.distinct === true ? 'DISTINCT ' : ''
+    const columnExpr: string = `${distinctModifier}${this.escapeIdentifier(aggregation.column)}`
+    const separatorClause: string =
+      aggregation.separator != null ? ` SEPARATOR '${aggregation.separator}'` : ''
+    if (aggregation.orderBy != null && aggregation.orderBy.length > 0) {
+      const orderBy: string = this.buildAggregationOrderByClause(aggregation.orderBy)
+      return `(${columnExpr} ORDER BY ${orderBy}${separatorClause})`
+    }
+    return `(${columnExpr}${separatorClause})`
+  }
+
+  /**
+   * Builds array aggregation expression SQL.
+   * @param aggregation - Aggregation expression object
+   * @returns SQL string for array aggregation expression
+   */
+  private buildArrayAggregationExpression(aggregation: QueryAggregationExpression): string {
+    const distinctModifier: string = aggregation.distinct === true ? 'DISTINCT ' : ''
+    const columnExpr: string = `${distinctModifier}${this.escapeIdentifier(aggregation.column)}`
+    if (aggregation.orderBy != null && aggregation.orderBy.length > 0) {
+      const orderBy: string = this.buildAggregationOrderByClause(aggregation.orderBy)
+      return `(${columnExpr} ORDER BY ${orderBy})`
+    }
+    return `(${columnExpr})`
+  }
+
+  /**
+   * Builds standard aggregation expression SQL.
+   * @param aggregation - Aggregation expression object
+   * @returns SQL string for standard aggregation expression
+   */
+  private buildStandardAggregationExpression(aggregation: QueryAggregationExpression): string {
+    const distinctModifier: string = aggregation.distinct === true ? 'DISTINCT ' : ''
+    const columnExpr: string =
+      aggregation.column === '*'
+        ? '*'
+        : `${distinctModifier}${this.escapeIdentifier(aggregation.column)}`
+    return `(${columnExpr})`
+  }
+
+  /**
+   * Builds ORDER BY clause for aggregations.
+   * @param orderBy - Order by clauses
+   * @returns SQL string for ORDER BY clause
+   */
+  private buildAggregationOrderByClause(orderBy: { column: string; direction: string }[]): string {
+    return orderBy
+      .map(
+        (order: { column: string; direction: string }) =>
+          `${this.escapeIdentifier(order.column)} ${order.direction}`
+      )
+      .join(', ')
+  }
+
+  /**
    * Adds a UNION clause to the query.
    * @param query - Query to union with
    * @returns This builder instance for method chaining
@@ -605,6 +794,206 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    */
   lead(column: string, offset: number = 1, over?: QueryWindowSpec): this {
     WindowMixin.addLead(this.query, column, offset, over)
+    return this
+  }
+
+  /**
+   * Error message for empty column names.
+   */
+
+  /**
+   * Validates column name for aggregations.
+   * @param column - Column name to validate
+   * @throws {Error} If column name is invalid
+   */
+  private validateAggregationColumn(column: string): void {
+    if (column == null || column === '') {
+      throw new Error(errorMessages.VALIDATION.EMPTY_COLUMN)
+    }
+  }
+
+  /**
+   * Adds a COUNT aggregation to the query.
+   * @param column - Column to count (use '*' for all rows)
+   * @param alias - Optional alias for the aggregation
+   * @param distinct - Whether to count distinct values
+   * @returns This builder instance for method chaining
+   */
+  count(column: string = '*', alias?: string, distinct?: boolean): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addCount(this.query, column, alias, distinct)
+    return this
+  }
+
+  /**
+   * Adds a SUM aggregation to the query.
+   * @param column - Column to sum
+   * @param alias - Optional alias for the aggregation
+   * @param distinct - Whether to sum distinct values
+   * @returns This builder instance for method chaining
+   */
+  sum(column: string, alias?: string, distinct?: boolean): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addSum(this.query, column, alias, distinct)
+    return this
+  }
+
+  /**
+   * Adds an AVG aggregation to the query.
+   * @param column - Column to average
+   * @param alias - Optional alias for the aggregation
+   * @param distinct - Whether to average distinct values
+   * @returns This builder instance for method chaining
+   */
+  avg(column: string, alias?: string, distinct?: boolean): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addAvg(this.query, column, alias, distinct)
+    return this
+  }
+
+  /**
+   * Adds a MAX aggregation to the query.
+   * @param column - Column to find maximum of
+   * @param alias - Optional alias for the aggregation
+   * @returns This builder instance for method chaining
+   */
+  max(column: string, alias?: string): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addMax(this.query, column, alias)
+    return this
+  }
+
+  /**
+   * Adds a MIN aggregation to the query.
+   * @param column - Column to find minimum of
+   * @param alias - Optional alias for the aggregation
+   * @returns This builder instance for method chaining
+   */
+  min(column: string, alias?: string): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addMin(this.query, column, alias)
+    return this
+  }
+
+  /**
+   * Adds a STDDEV aggregation to the query.
+   * @param column - Column to calculate standard deviation of
+   * @param alias - Optional alias for the aggregation
+   * @param distinct - Whether to calculate standard deviation of distinct values
+   * @returns This builder instance for method chaining
+   */
+  stdDev(column: string, alias?: string, distinct?: boolean): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addStdDev(this.query, column, alias, distinct)
+    return this
+  }
+
+  /**
+   * Adds a VARIANCE aggregation to the query.
+   * @param column - Column to calculate variance of
+   * @param alias - Optional alias for the aggregation
+   * @param distinct - Whether to calculate variance of distinct values
+   * @returns This builder instance for method chaining
+   */
+  variance(column: string, alias?: string, distinct?: boolean): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addVariance(this.query, column, alias, distinct)
+    return this
+  }
+
+  /**
+   * Adds a PERCENTILE_CONT aggregation to the query.
+   * @param column - Column to calculate percentile of
+   * @param percentile - Percentile value (0-1)
+   * @param alias - Optional alias for the aggregation
+   * @returns This builder instance for method chaining
+   */
+  percentileCont(column: string, percentile: number, alias?: string): this {
+    this.validateAggregationColumn(column)
+    if (typeof percentile !== 'number' || isNaN(percentile) || percentile < 0 || percentile > 1) {
+      throw new Error(errorMessages.VALIDATION.INVALID_PERCENTILE)
+    }
+    AggregationMixin.addPercentileCont(this.query, column, percentile, alias)
+    return this
+  }
+
+  /**
+   * Adds a GROUP_CONCAT aggregation to the query.
+   * @param column - Column to concatenate
+   * @param alias - Optional alias for the aggregation
+   * @param separator - Optional separator for concatenation
+   * @param orderBy - Optional ordering for concatenation
+   * @param distinct - Whether to concatenate distinct values
+   * @returns This builder instance for method chaining
+   */
+  groupConcat(
+    column: string,
+    alias?: string,
+    separator?: string,
+    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    distinct?: boolean
+  ): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addGroupConcat(this.query, column, alias, separator, orderBy, distinct)
+    return this
+  }
+
+  /**
+   * Adds a STRING_AGG aggregation to the query (PostgreSQL).
+   * @param column - Column to aggregate
+   * @param alias - Optional alias for the aggregation
+   * @param separator - Optional separator for aggregation
+   * @param orderBy - Optional ordering for aggregation
+   * @param distinct - Whether to aggregate distinct values
+   * @returns This builder instance for method chaining
+   */
+  stringAgg(
+    column: string,
+    alias?: string,
+    separator?: string,
+    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    distinct?: boolean
+  ): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addStringAgg(this.query, column, alias, separator, orderBy, distinct)
+    return this
+  }
+
+  /**
+   * Adds an ARRAY_AGG aggregation to the query.
+   * @param column - Column to aggregate into array
+   * @param alias - Optional alias for the aggregation
+   * @param orderBy - Optional ordering for aggregation
+   * @param distinct - Whether to aggregate distinct values
+   * @returns This builder instance for method chaining
+   */
+  arrayAgg(
+    column: string,
+    alias?: string,
+    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    distinct?: boolean
+  ): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addArrayAgg(this.query, column, alias, orderBy, distinct)
+    return this
+  }
+
+  /**
+   * Adds a JSON_AGG aggregation to the query.
+   * @param column - Column to aggregate into JSON array
+   * @param alias - Optional alias for the aggregation
+   * @param orderBy - Optional ordering for aggregation
+   * @param distinct - Whether to aggregate distinct values
+   * @returns This builder instance for method chaining
+   */
+  jsonAgg(
+    column: string,
+    alias?: string,
+    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    distinct?: boolean
+  ): this {
+    this.validateAggregationColumn(column)
+    AggregationMixin.addJsonAgg(this.query, column, alias, orderBy, distinct)
     return this
   }
 

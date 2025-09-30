@@ -1,3 +1,9 @@
+import {
+  errorMessages,
+  getInvalidIdentifierError,
+  getInvalidFunctionParameterError
+} from '@constants/ErrorMap'
+
 /**
  * SQL sanitization utilities for preventing injection attacks.
  * @description Provides static methods to sanitize SQL identifiers, values, and queries.
@@ -11,7 +17,7 @@ export class SqlSanitizer {
    */
   static sanitizeIdentifier(identifier: string): string {
     if (!identifier || typeof identifier !== 'string') {
-      throw new Error('Invalid identifier')
+      throw new Error(errorMessages.VALIDATION.INVALID_IDENTIFIER)
     }
     if (identifier.includes('(') && identifier.includes(')')) {
       const functionMatch: RegExpExecArray | null =
@@ -32,7 +38,7 @@ export class SqlSanitizer {
             ) {
               return trimmed
             }
-            throw new Error(`Invalid function parameter: ${trimmed}`)
+            throw new Error(getInvalidFunctionParameterError(trimmed))
           })
           .join(', ')
         return `${funcName}(${sanitizedParams})`
@@ -43,7 +49,7 @@ export class SqlSanitizer {
     }
     const sanitized: string = identifier.replace(/[^a-zA-Z0-9_.() ]/g, '')
     if (sanitized !== identifier) {
-      throw new Error(`Invalid identifier: ${identifier}`)
+      throw new Error(getInvalidIdentifierError(identifier))
     }
     return sanitized
   }

@@ -1,4 +1,5 @@
 import type { QueryInsert } from '@interfaces/index'
+import { errorMessages } from '@constants/index'
 
 /**
  * Mixin for INSERT query operations.
@@ -52,7 +53,7 @@ export class InsertMixin {
     addParam: (value: unknown) => string
   ): string {
     if (query.values == null || Array.isArray(query.values)) {
-      throw new Error('Expected single row values for single VALUES clause')
+      throw new Error(errorMessages.QUERY.INSERT_SINGLE_ROW_VALUES)
     }
     const columns: string[] = Object.keys(query.values)
     const columnList: string = columns.map((col: string) => escapeIdentifier(col)).join(', ')
@@ -75,7 +76,7 @@ export class InsertMixin {
     addParam: (value: unknown) => string
   ): string {
     if (!Array.isArray(query.values) || query.values.length === 0) {
-      throw new Error('Expected array of values for batch VALUES clause')
+      throw new Error(errorMessages.QUERY.INSERT_BATCH_VALUES)
     }
     const columns: string[] = Object.keys(query.values[0] as Record<string, unknown>)
     const columnList: string = columns.map((col: string) => escapeIdentifier(col)).join(', ')
@@ -103,6 +104,6 @@ export class InsertMixin {
     } else if (query.values != null && !Array.isArray(query.values)) {
       return this.buildSingleValuesClause(query, escapeIdentifier, addParam)
     }
-    throw new Error('No values provided for INSERT query')
+    throw new Error(errorMessages.QUERY.INSERT_NO_VALUES)
   }
 }

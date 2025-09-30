@@ -1,5 +1,6 @@
 import type { DatabaseConfig, ConnectionBase } from '@interfaces/index'
 import { Base, Postgres, MySql, Sqlite } from '@core/dialects/index'
+import { getInvalidDatabaseTypeError } from '@constants/ErrorMap'
 
 /**
  * Database connection manager with connection pooling.
@@ -103,7 +104,7 @@ export class Connection {
       case 'sqlite':
         return new Sqlite(this.config)
       default:
-        throw new Error(`Unsupported database type: ${type}`)
+        throw new Error(getInvalidDatabaseTypeError(type))
     }
   }
 

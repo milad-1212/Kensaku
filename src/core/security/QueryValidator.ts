@@ -7,10 +7,15 @@ import type {
   QueryJoinClause
 } from '@interfaces/index'
 import { SqlSanitizer } from '@core/security/index'
+import {
+  errorMessages,
+  getInvalidColumnAliasError,
+  getInvalidColumnAliasFormatError,
+  getInvalidColumnNameError
+} from '@constants/ErrorMap'
 
 /**
  * Validates query structure and parameters for security and correctness.
- * @description Provides static methods to validate different types of SQL queries.
  */
 export class QueryValidator {
   /**
@@ -21,12 +26,12 @@ export class QueryValidator {
    */
   static validateSelectQuery(query: QuerySelect): boolean {
     if (query.from == null) {
-      throw new Error('SELECT query must have a FROM clause')
+      throw new Error(errorMessages.QUERY.SELECT_MISSING_FROM)
     }
     if (query.columns !== undefined && Array.isArray(query.columns)) {
       query.columns.forEach((col: string) => {
         if (typeof col !== 'string') {
-          throw new Error('Column names must be strings')
+          throw new Error(errorMessages.WHERE.COLUMN_NAMES_MUST_BE_STRINGS)
         }
         if (col === '*') {
           // Allow wildcard column
@@ -37,15 +42,15 @@ export class QueryValidator {
             if (SqlSanitizer.validateIdentifier(cleanAlias)) {
               SqlSanitizer.sanitizeIdentifier(cleanAlias)
             } else {
-              throw new Error(`Invalid column alias: ${cleanAlias}`)
+              throw new Error(getInvalidColumnAliasError(cleanAlias))
             }
           } else {
-            throw new Error(`Invalid column alias format: ${col}`)
+            throw new Error(getInvalidColumnAliasFormatError(col))
           }
         } else if (SqlSanitizer.validateIdentifier(col)) {
           SqlSanitizer.sanitizeIdentifier(col)
         } else {
-          throw new Error(`Invalid column name: ${col}`)
+          throw new Error(getInvalidColumnNameError(col))
         }
       })
     }
@@ -66,11 +71,11 @@ export class QueryValidator {
    */
   static validateInsertQuery(query: QueryInsert): boolean {
     if (query.into == null) {
-      throw new Error('INSERT query must have an INTO clause')
+      throw new Error(errorMessages.QUERY.INSERT_MISSING_INTO)
     }
     SqlSanitizer.sanitizeIdentifier(query.into)
     if (query.values == null || (Array.isArray(query.values) && query.values.length === 0)) {
-      throw new Error('INSERT query must have values')
+      throw new Error(errorMessages.QUERY.INSERT_MISSING_VALUES)
     }
     if (query.returning != null) {
       query.returning.forEach((col: string) => {
@@ -88,11 +93,11 @@ export class QueryValidator {
    */
   static validateUpdateQuery(query: QueryUpdate): boolean {
     if (query.table == null) {
-      throw new Error('UPDATE query must have a table')
+      throw new Error(errorMessages.QUERY.UPDATE_MISSING_TABLE)
     }
     SqlSanitizer.sanitizeIdentifier(query.table)
     if (query.set == null || Object.keys(query.set).length === 0) {
-      throw new Error('UPDATE query must have SET clause')
+      throw new Error(errorMessages.QUERY.UPDATE_MISSING_SET)
     }
     if (query.where != null) {
       this.validateWhereConditions(query.where)
@@ -113,11 +118,11 @@ export class QueryValidator {
    */
   static validateDeleteQuery(query: QueryDelete): boolean {
     if (query.from == null) {
-      throw new Error('DELETE query must have a FROM clause')
+      throw new Error(errorMessages.QUERY.DELETE_MISSING_FROM)
     }
     SqlSanitizer.sanitizeIdentifier(query.from)
     if (query.where == null || query.where.length === 0) {
-      throw new Error('DELETE query must have a WHERE clause for safety')
+      throw new Error(errorMessages.QUERY.DELETE_MISSING_WHERE)
     }
     this.validateWhereConditions(query.where)
     if (query.returning != null) {
@@ -135,18 +140,26 @@ export class QueryValidator {
    */
   private static validateWhereConditions(conditions: QueryWhereCondition[]): void {
     conditions.forEach((condition: QueryWhereCondition) => {
+      // Skip validation for RAW SQL conditions
+      if (condition.operator === 'RAW') {
+        if (condition.column == null || typeof condition.column !== 'string') {
+          throw new Error(errorMessages.WHERE.INVALID_RAW_CONDITION)
+        }
+        return
+      }
+
       if (condition.column == null || typeof condition.column !== 'string') {
-        throw new Error('WHERE condition must have a valid column name')
+        throw new Error(errorMessages.WHERE.INVALID_COLUMN_NAME)
       }
       SqlSanitizer.sanitizeIdentifier(condition.column)
       if (condition.operator == null) {
-        throw new Error('WHERE condition must have an operator')
+        throw new Error(errorMessages.WHERE.INVALID_OPERATOR)
       }
       if (
         condition.value === undefined &&
         !['IS NULL', 'IS NOT NULL'].includes(condition.operator)
       ) {
-        throw new Error('WHERE condition must have a value')
+        throw new Error(errorMessages.WHERE.INVALID_VALUE)
       }
       if (condition.value === '' && condition.operator === '=') {
         return
@@ -162,13 +175,13 @@ export class QueryValidator {
   private static validateJoins(joins: QueryJoinClause[]): void {
     joins.forEach((join: QueryJoinClause) => {
       if (join.table == null) {
-        throw new Error('JOIN must have a table')
+        throw new Error(errorMessages.JOIN.MISSING_TABLE)
       }
       if (typeof join.table === 'string') {
         SqlSanitizer.sanitizeIdentifier(join.table)
       }
       if (join.on == null || !Array.isArray(join.on)) {
-        throw new Error('JOIN must have ON conditions')
+        throw new Error(errorMessages.JOIN.MISSING_ON_CONDITIONS)
       }
       this.validateWhereConditions(join.on)
     })

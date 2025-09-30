@@ -4,7 +4,6 @@ import { SqlEscapeHelper } from '@builders/helpers/index'
 
 /**
  * Abstract base class for all query builders.
- * @description Provides common functionality for building and executing SQL queries with parameter binding and security features.
  * @template T - Return type of query results
  */
 export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {

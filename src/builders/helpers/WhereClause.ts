@@ -18,28 +18,63 @@ export class WhereClauseHelper {
     value?: unknown
   ): QueryWhereCondition {
     if (typeof columnOrCondition === 'string') {
-      if (typeof operatorOrValue === 'string') {
-        if (operatorOrValue === 'BETWEEN' && value !== undefined) {
-          return {
-            column: columnOrCondition,
-            operator: operatorOrValue,
-            value: Array.isArray(value) ? value : [value, value]
-          }
-        }
-        return {
-          column: columnOrCondition,
-          operator: operatorOrValue,
-          value: value ?? null
-        }
-      } else {
-        return {
-          column: columnOrCondition,
-          operator: '=',
-          value: operatorOrValue
-        }
+      return this.createStringCondition(columnOrCondition, operatorOrValue, value)
+    }
+    return columnOrCondition
+  }
+
+  /**
+   * Creates a WHERE condition from string column.
+   * @param column - Column name
+   * @param operatorOrValue - Operator or value
+   * @param value - Value (if operator is provided)
+   * @returns WHERE condition object
+   */
+  private static createStringCondition(
+    column: string,
+    operatorOrValue?: QueryComparisonOperator,
+    value?: unknown
+  ): QueryWhereCondition {
+    if (typeof operatorOrValue === 'string') {
+      return this.createOperatorCondition(column, operatorOrValue, value)
+    }
+    return {
+      column,
+      operator: '=',
+      value: operatorOrValue
+    }
+  }
+
+  /**
+   * Creates a WHERE condition with operator.
+   * @param column - Column name
+   * @param operator - Operator
+   * @param value - Value
+   * @returns WHERE condition object
+   */
+  private static createOperatorCondition(
+    column: string,
+    operator: QueryComparisonOperator,
+    value?: unknown
+  ): QueryWhereCondition {
+    if (operator === 'BETWEEN' && value !== undefined) {
+      return {
+        column,
+        operator,
+        value: Array.isArray(value) ? value : [value, value]
       }
-    } else {
-      return columnOrCondition
+    }
+    if (operator === 'RAW') {
+      return {
+        column,
+        operator,
+        value: value ?? []
+      }
+    }
+    return {
+      column,
+      operator,
+      value: value ?? null
     }
   }
 

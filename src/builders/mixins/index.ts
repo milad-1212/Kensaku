@@ -2,6 +2,7 @@
  * Query builder Mixin.
  * @description Re-exports all mixin classes for query building functionality.
  */
+export * from '@builders/mixins/Aggregation'
 export * from '@builders/mixins/Cte'
 export * from '@builders/mixins/Delete'
 export * from '@builders/mixins/Having'

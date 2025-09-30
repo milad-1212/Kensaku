@@ -1,4 +1,5 @@
 import type { QuerySelect, QueryWhereCondition, QueryComparisonOperator } from '@interfaces/index'
+import { getInvalidOperatorError } from '@constants/ErrorMap'
 import { WhereClauseHelper } from '@builders/helpers/index'
 
 /**
@@ -67,6 +68,53 @@ export class WhereMixin {
   }
 
   /**
+   * Adds a raw SQL WHERE condition to the query.
+   * @param query - Query object to modify
+   * @param sql - Raw SQL condition
+   * @param params - Optional parameters for the SQL
+   */
+  static addRawWhereCondition(query: QuerySelect, sql: string, params?: unknown[]): void {
+    query.where ??= []
+    query.where.push({
+      column: sql,
+      operator: 'RAW',
+      value: params ?? []
+    })
+  }
+
+  /**
+   * Adds a raw SQL AND WHERE condition to the query.
+   * @param query - Query object to modify
+   * @param sql - Raw SQL condition
+   * @param params - Optional parameters for the SQL
+   */
+  static addRawAndWhereCondition(query: QuerySelect, sql: string, params?: unknown[]): void {
+    query.where ??= []
+    query.where.push({
+      column: sql,
+      operator: 'RAW',
+      value: params ?? [],
+      logical: 'AND'
+    })
+  }
+
+  /**
+   * Adds a raw SQL OR WHERE condition to the query.
+   * @param query - Query object to modify
+   * @param sql - Raw SQL condition
+   * @param params - Optional parameters for the SQL
+   */
+  static addRawOrWhereCondition(query: QuerySelect, sql: string, params?: unknown[]): void {
+    query.where ??= []
+    query.where.push({
+      column: sql,
+      operator: 'RAW',
+      value: params ?? [],
+      logical: 'OR'
+    })
+  }
+
+  /**
    * Validates that the operator is supported.
    * @param operator - Operator to validate
    * @throws {Error} If operator is not supported
@@ -90,12 +138,15 @@ export class WhereMixin {
       'IS NULL',
       'IS NOT NULL',
       'EXISTS',
-      'NOT EXISTS'
+      'NOT EXISTS',
+      'IS DISTINCT FROM',
+      'SIMILAR TO',
+      'REGEXP',
+      'RLIKE',
+      'GLOB'
     ]
     if (!validOperators.includes(operator as QueryComparisonOperator)) {
-      throw new Error(
-        `Unsupported operator: ${operator}. Valid operators are: ${validOperators.join(', ')}`
-      )
+      throw new Error(getInvalidOperatorError(operator))
     }
   }
 }

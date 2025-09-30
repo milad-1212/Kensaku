@@ -4,6 +4,7 @@ import {
   typeMappers,
   type DatabaseType
 } from '@core/dialects/builders/DataType'
+import { getInvalidDatabaseError } from '@constants/ErrorMap'
 
 /**
  * Dialect factory utilities.
@@ -166,6 +167,6 @@ export const dialectHelpers: {
     if (normalizedName in typeMappers) {
       return typeMappers[normalizedName]
     }
-    throw new Error(`Unsupported database: ${name}`)
+    throw new Error(getInvalidDatabaseError(name))
   }
 } as const

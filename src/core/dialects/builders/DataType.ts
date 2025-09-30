@@ -1,3 +1,5 @@
+import { getInvalidDatabaseTypeError } from '@constants/ErrorMap'
+
 /**
  * Supported database types.
  */
@@ -129,7 +131,7 @@ export class DataTypeHelpers {
   static getDataType(databaseType: DatabaseType, genericType: string): string {
     const mapping: Record<string, string> = typeMappings[databaseType]
     if (mapping == undefined) {
-      throw new Error(`Unsupported database type: ${databaseType}`)
+      throw new Error(getInvalidDatabaseTypeError(databaseType))
     }
     const normalizedType: string = genericType.toUpperCase()
     return (
@@ -146,7 +148,7 @@ export class DataTypeHelpers {
   static getSupportedTypes(databaseType: DatabaseType): string[] {
     const mapping: Record<string, string> = typeMappings[databaseType]
     if (mapping == undefined) {
-      throw new Error(`Unsupported database type: ${databaseType}`)
+      throw new Error(getInvalidDatabaseTypeError(databaseType))
     }
     return Object.keys(mapping)
   }

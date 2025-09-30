@@ -22,7 +22,8 @@ export class WhereConditionHelper {
   ): string {
     return conditions
       .map((condition: QueryWhereCondition, index: number) => {
-        const column: string = escapeIdentifier(condition.column)
+        const column: string =
+          condition.operator === 'RAW' ? condition.column : escapeIdentifier(condition.column)
         const { operator }: { operator: QueryComparisonOperator } = condition
         const logical: string = condition.logical ?? 'AND'
         return this.buildSingleCondition(
@@ -93,6 +94,16 @@ export class WhereConditionHelper {
     isColumnReference: ((value: unknown) => boolean) | undefined,
     escapeIdentifier: (identifier: string) => string
   ): string {
+    if (operator === 'RAW') {
+      const rawSql: string = condition.column
+      const params: unknown[] = Array.isArray(condition.value) ? condition.value : []
+      let processedSql: string = rawSql
+      params.forEach((param: unknown) => {
+        const placeholder: string = addParam(param)
+        processedSql = processedSql.replace('?', placeholder)
+      })
+      return processedSql
+    }
     if (['IS NULL', 'IS NOT NULL'].includes(operator)) {
       return `${column} ${operator}`
     }

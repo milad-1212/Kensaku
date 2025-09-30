@@ -11,9 +11,9 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
       - [x] Select with column aliases
       - [x] Select distinct
       - [x] Select with aggregations (COUNT, SUM, AVG, etc.)
-      - [ ] Advanced aggregations (STDDEV, VARIANCE, PERCENTILE_CONT)
-      - [ ] Statistical functions (MODE, GROUP_CONCAT, STRING_AGG)
-      - [ ] Array aggregations (ARRAY_AGG, JSON_AGG)
+      - [x] Advanced aggregations (STDDEV, VARIANCE, PERCENTILE_CONT)
+      - [x] Statistical functions (MODE, GROUP_CONCAT, STRING_AGG)
+      - [x] Array aggregations (ARRAY_AGG, JSON_AGG)
   - [x] **FROM clause**
     - [x] Single table selection
     - [x] Table aliases
@@ -23,10 +23,10 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
     - [x] Multiple where conditions (AND/OR) - andWhere() and orWhere() methods
     - [x] Where with operators (=, !=, >, <, >=, <=, LIKE, IN, BETWEEN, IS NULL, IS NOT NULL, EXISTS, NOT EXISTS)
     - [x] Where with NULL checks
-    - [ ] Where with raw SQL
-    - [ ] Advanced operators (IS DISTINCT FROM, ILIKE, SIMILAR TO)
-    - [ ] Regex operators (REGEXP, RLIKE, GLOB)
-    - [ ] Pattern matching operators
+    - [x] Where with raw SQL
+    - [x] Advanced operators (IS DISTINCT FROM, ILIKE, SIMILAR TO)
+    - [x] Regex operators (REGEXP, RLIKE, GLOB)
+    - [x] Pattern matching operators
   - [x] **JOIN operations**
     - [x] INNER JOIN - innerJoin() method
     - [x] LEFT JOIN - leftJoin() method
@@ -41,7 +41,7 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
   - [x] **ORDER BY**
     - [x] Order by single/multiple columns
     - [x] ASC/DESC ordering
-    - [ ] Order by with expressions
+    - [x] Order by with expressions
   - [x] **LIMIT & OFFSET**
     - [x] Limit results
     - [x] Offset for pagination
@@ -59,7 +59,7 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
     - [x] Delete with returning clause
   - [x] **Raw SQL support**
     - [x] Raw SQL injection
-    - [ ] Raw expressions in queries
+    - [x] Raw expressions in queries
   - [x] **Query execution**
     - [x] Query string generation
     - [x] Parameter binding
@@ -149,15 +149,15 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
       - [ ] Deallocate prepared statements
       - [ ] Parameter binding optimization
 - [x] **Database Support**
-  - [x] **PostgreSQL**
-    - [x] Connection handling
-    - [x] Dialect-specific SQL generation
-    - [x] Data type mapping
-    - [x] Transaction support
-    - [x] Custom data types (UUID, ENUM, etc.)
-    - [ ] Advanced indexing (GIN, GiST, etc.)
-    - [ ] Partitioning support
-    - [ ] PostgreSQL extensions
+    - [x] **PostgreSQL**
+      - [x] Connection handling
+      - [x] Dialect-specific SQL generation
+      - [x] Data type mapping
+      - [x] Transaction support
+      - [x] Custom data types (UUID, ENUM, etc.)
+      - [ ] Advanced indexing (GIN, GiST, etc.)
+      - [ ] Partitioning support
+      - [ ] PostgreSQL extensions
   - [x] **MySQL**
     - [x] Connection handling
     - [x] Dialect-specific SQL generation
