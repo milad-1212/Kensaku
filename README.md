@@ -78,29 +78,29 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
       - [x] NOT EXISTS
       - [x] IN subqueries
       - [x] NOT IN subqueries
-    - [ ] **Conditional expressions**
-      - [ ] CASE statements
-      - [ ] CASE WHEN conditions
-      - [ ] COALESCE
-      - [ ] NULLIF
+    - [x] **Conditional expressions**
+      - [x] CASE statements
+      - [x] CASE WHEN conditions
+      - [x] COALESCE
+      - [x] NULLIF
     - [x] **Window functions**
       - [x] ROW_NUMBER()
       - [x] RANK()
       - [x] DENSE_RANK()
       - [x] LAG()/LEAD()
-      - [ ] FIRST_VALUE()/LAST_VALUE()
-      - [ ] NTILE()
-      - [ ] CUME_DIST()
-      - [ ] PERCENT_RANK()
-      - [ ] NTH_VALUE()
+      - [x] FIRST_VALUE()/LAST_VALUE()
+      - [x] NTILE()
+      - [x] CUME_DIST()
+      - [x] PERCENT_RANK()
+      - [x] NTH_VALUE()
       - [x] Window partitioning
       - [x] Window ordering
-      - [ ] Window frame specifications (ROWS, RANGE, GROUPS)
+      - [x] Window frame specifications (ROWS, RANGE, GROUPS)
       - [ ] WINDOW clause definitions
-    - [ ] **Set operations**
-      - [ ] INTERSECT
-      - [ ] EXCEPT/MINUS
-      - [ ] Multiple set operations chaining
+    - [x] **Set operations**
+      - [x] INTERSECT
+      - [x] EXCEPT/MINUS
+      - [x] Multiple set operations chaining
     - [ ] **Advanced Query Features**
       - [ ] LATERAL JOINs (PostgreSQL)
       - [ ] PIVOT/UNPIVOT operations

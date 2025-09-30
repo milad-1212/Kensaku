@@ -128,6 +128,52 @@ export abstract class Base {
   }
 
   /**
+   * Builds window functions for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param escapeFn - Dialect-specific escape function
+   */
+  public buildWindowFunctions(
+    query: QuerySelect,
+    parts: string[],
+    escapeFn: (name: string) => string
+  ): void {
+    QueryBuilders.buildWindowFunctions(query, parts, escapeFn)
+  }
+
+  /**
+   * Builds conditional expressions for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param escapeFn - Dialect-specific escape function
+   */
+  public buildConditionalExpressions(
+    query: QuerySelect,
+    parts: string[],
+    escapeFn: (name: string) => string
+  ): void {
+    QueryBuilders.buildConditionalExpressions(query, parts, escapeFn)
+  }
+
+  /**
+   * Builds set operations for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
+   * @param escapeFn - Dialect-specific escape function
+   * @param buildSelectQueryFn - Dialect-specific SELECT query builder
+   */
+  public buildSetOperations(
+    query: QuerySelect,
+    parts: string[],
+    params: unknown[],
+    escapeFn: (name: string) => string,
+    buildSelectQueryFn: (query: QuerySelect) => { sql: string; params: unknown[] }
+  ): void {
+    QueryBuilders.buildSetOperations(query, parts, params, escapeFn, buildSelectQueryFn)
+  }
+
+  /**
    * Builds the SELECT clause for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts

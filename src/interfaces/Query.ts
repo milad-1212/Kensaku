@@ -165,12 +165,17 @@ export interface QueryRawQuery {
 }
 
 /**
- * Interface for UNION clause structure.
+ * Supported set operation types.
+ */
+export type QuerySetOperation = 'UNION' | 'UNION ALL' | 'INTERSECT' | 'EXCEPT' | 'MINUS'
+
+/**
+ * Interface for set operation clause structure.
  */
 export interface QueryUnionClause {
-  /** Type of union operation */
-  type: 'UNION' | 'UNION ALL'
-  /** Query to union with */
+  /** Type of set operation */
+  type: QuerySetOperation
+  /** Query to perform operation with */
   query: QuerySelect
 }
 
@@ -222,7 +227,38 @@ export interface QueryWindowSpec {
     type: 'ROWS' | 'RANGE' | 'GROUPS'
     start: string | number
     end?: string | number
+    exclude?: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS'
   }
+}
+
+/**
+ * Interface for CASE expression structure.
+ */
+export interface QueryCaseExpression {
+  /** WHEN condition */
+  when: string
+  /** THEN value */
+  then: string | number
+  /** ELSE value (optional) */
+  else?: string | number
+}
+
+/**
+ * Interface for conditional expressions (CASE, COALESCE, NULLIF).
+ */
+export interface QueryConditionalExpression {
+  /** Type of conditional expression */
+  type: 'CASE' | 'COALESCE' | 'NULLIF'
+  /** CASE expressions (for CASE type) */
+  case?: QueryCaseExpression[]
+  /** Columns for COALESCE */
+  columns?: string[]
+  /** First column for NULLIF */
+  column1?: string
+  /** Second column for NULLIF */
+  column2?: string
+  /** Optional alias */
+  alias?: string
 }
 
 /**
@@ -257,6 +293,8 @@ export interface QuerySelect {
   ctes?: QueryCTEClause[]
   /** Window functions */
   windowFunctions?: QueryWindowFunction[]
+  /** Conditional expressions */
+  conditionals?: QueryConditionalExpression[]
 }
 
 /**

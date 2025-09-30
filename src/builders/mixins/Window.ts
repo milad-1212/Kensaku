@@ -85,4 +85,94 @@ export class WindowMixin {
       ...over !== undefined && { over }
     })
   }
+
+  /**
+   * Adds a FIRST_VALUE() window function to the query.
+   * @param query - Query object to modify
+   * @param column - Column to get first value of
+   * @param over - Window specification
+   */
+  static addFirstValue(query: QuerySelect, column: string, over?: QueryWindowSpec): void {
+    query.windowFunctions ??= []
+    query.windowFunctions.push({
+      function: 'FIRST_VALUE',
+      args: [column],
+      ...over !== undefined && { over }
+    })
+  }
+
+  /**
+   * Adds a LAST_VALUE() window function to the query.
+   * @param query - Query object to modify
+   * @param column - Column to get last value of
+   * @param over - Window specification
+   */
+  static addLastValue(query: QuerySelect, column: string, over?: QueryWindowSpec): void {
+    query.windowFunctions ??= []
+    query.windowFunctions.push({
+      function: 'LAST_VALUE',
+      args: [column],
+      ...over !== undefined && { over }
+    })
+  }
+
+  /**
+   * Adds an NTILE() window function to the query.
+   * @param query - Query object to modify
+   * @param buckets - Number of buckets to divide rows into
+   * @param over - Window specification
+   */
+  static addNtile(query: QuerySelect, buckets: number, over?: QueryWindowSpec): void {
+    if (buckets <= 0) {
+      throw new Error('NTILE requires positive number of buckets')
+    }
+    query.windowFunctions ??= []
+    query.windowFunctions.push({
+      function: 'NTILE',
+      args: [buckets.toString()],
+      ...over !== undefined && { over }
+    })
+  }
+
+  /**
+   * Adds a CUME_DIST() window function to the query.
+   * @param query - Query object to modify
+   * @param over - Window specification
+   */
+  static addCumeDist(query: QuerySelect, over?: QueryWindowSpec): void {
+    query.windowFunctions ??= []
+    query.windowFunctions.push({
+      function: 'CUME_DIST',
+      ...over !== undefined && { over }
+    })
+  }
+
+  /**
+   * Adds a PERCENT_RANK() window function to the query.
+   * @param query - Query object to modify
+   * @param over - Window specification
+   */
+  static addPercentRank(query: QuerySelect, over?: QueryWindowSpec): void {
+    query.windowFunctions ??= []
+    query.windowFunctions.push({
+      function: 'PERCENT_RANK',
+      ...over !== undefined && { over }
+    })
+  }
+
+  /**
+   * Adds an NTH_VALUE() window function to the query.
+   * @param query - Query object to modify
+   * @param column - Column to get nth value of
+   * @param n - Position of the value to return
+   * @param over - Window specification
+   */
+  static addNthValue(query: QuerySelect, column: string, n: number, over?: QueryWindowSpec): void {
+    query.windowFunctions ??= []
+    query.windowFunctions.push({
+      function: 'NTH_VALUE',
+      args: [column, n.toString()],
+      ...over !== undefined && { over }
+    })
+  }
 }

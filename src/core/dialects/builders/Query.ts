@@ -1,4 +1,9 @@
-import type { QuerySelect, QueryWhereCondition } from '@interfaces/index'
+import type {
+  QuerySelect,
+  QueryWhereCondition,
+  QueryWindowFunction,
+  QueryConditionalExpression
+} from '@interfaces/index'
 
 /**
  * Core query building utilities for database dialects.
@@ -186,5 +191,174 @@ export class QueryBuilders {
     if (query.offset !== undefined && query.offset > 0) {
       parts.push('OFFSET', query.offset.toString())
     }
+  }
+
+  /**
+   * Builds window functions for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param escapeFn - Dialect-specific escape function
+   */
+  static buildWindowFunctions(
+    query: QuerySelect,
+    parts: string[],
+    escapeFn: (name: string) => string
+  ): void {
+    if (query.windowFunctions !== undefined && query.windowFunctions.length > 0) {
+      const windowFunctions: string[] = query.windowFunctions.map((wf: QueryWindowFunction) => {
+        const args: string = wf.args != null ? `(${wf.args.join(', ')})` : '()'
+        let windowSpec: string = ''
+        if (wf.over !== undefined) {
+          windowSpec = this.buildWindowSpec(wf.over, escapeFn)
+        }
+        return `${wf.function}${args}${windowSpec}`
+      })
+      parts.push(',', windowFunctions.join(', '))
+    }
+  }
+
+  /**
+   * Builds conditional expressions for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param escapeFn - Dialect-specific escape function
+   */
+  static buildConditionalExpressions(
+    query: QuerySelect,
+    parts: string[],
+    escapeFn: (name: string) => string
+  ): void {
+    if (query.conditionals !== undefined && query.conditionals.length > 0) {
+      const conditionals: string[] = query.conditionals.map((cond: QueryConditionalExpression) => {
+        let expression: string = ''
+        switch (cond.type) {
+          case 'CASE':
+            expression = this.buildCaseExpression(cond.case ?? [])
+            break
+          case 'COALESCE':
+            expression = `COALESCE(${cond.columns?.map((col: string) => escapeFn(col)).join(', ') ?? ''})`
+            break
+          case 'NULLIF':
+            expression = `NULLIF(${escapeFn(cond.column1 ?? '')}, ${escapeFn(cond.column2 ?? '')})`
+            break
+        }
+        return cond.alias != null ? `${expression} AS ${escapeFn(cond.alias)}` : expression
+      })
+      parts.push(',', conditionals.join(', '))
+    }
+  }
+
+  /**
+   * Builds set operations (UNION, INTERSECT, EXCEPT) for any dialect.
+   * @param query - SELECT query object
+   * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
+   * @param escapeFn - Dialect-specific escape function
+   * @param buildSelectQueryFn - Dialect-specific SELECT query builder
+   */
+  static buildSetOperations(
+    query: QuerySelect,
+    parts: string[],
+    params: unknown[],
+    _escapeFn: (name: string) => string,
+    buildSelectQueryFn: (query: QuerySelect) => { sql: string; params: unknown[] }
+  ): void {
+    if (query.unions !== undefined && query.unions.length > 0) {
+      for (const union of query.unions) {
+        const { sql, params: unionParams }: { sql: string; params: unknown[] } = buildSelectQueryFn(
+          union.query
+        )
+        parts.push(union.type, sql)
+        params.push(...unionParams)
+      }
+    }
+  }
+
+  /**
+   * Builds window specification for any dialect.
+   * @param spec - Window specification
+   * @param escapeFn - Dialect-specific escape function
+   * @returns Window specification SQL string
+   */
+  private static buildWindowSpec(
+    spec: {
+      partitionBy?: string[]
+      orderBy?: { column: string; direction: string }[]
+      frame?: { type: string; start: string | number; end?: string | number; exclude?: string }
+    },
+    escapeFn: (name: string) => string
+  ): string {
+    let windowSpec: string = 'OVER ('
+    if (spec.partitionBy !== undefined && spec.partitionBy.length > 0) {
+      windowSpec += `PARTITION BY ${spec.partitionBy.map((col: string) => escapeFn(col)).join(', ')}`
+    }
+    if (spec.orderBy !== undefined && spec.orderBy.length > 0) {
+      if (spec.partitionBy !== undefined && spec.partitionBy.length > 0) {
+        windowSpec += ' '
+      }
+      const orderByClause: string = spec.orderBy
+        .map(
+          (ob: { column: string; direction: string }) => `${escapeFn(ob.column)} ${ob.direction}`
+        )
+        .join(', ')
+      windowSpec += `ORDER BY ${orderByClause}`
+    }
+    if (spec.frame !== undefined) {
+      if (spec.partitionBy !== undefined || spec.orderBy !== undefined) {
+        windowSpec += ' '
+      }
+      windowSpec += this.buildWindowFrame(
+        spec.frame as {
+          type: string
+          start: string | number
+          end?: string | number
+          exclude?: string
+        }
+      )
+    }
+    windowSpec += ')'
+    return windowSpec
+  }
+
+  /**
+   * Builds window frame specification.
+   * @param frame - Window frame specification
+   * @returns Window frame SQL string
+   */
+  private static buildWindowFrame(frame: {
+    type: string
+    start: string | number
+    end?: string | number
+    exclude?: string
+  }): string {
+    let frameSpec: string = `${frame.type}`
+    frameSpec += ` ${frame.start}`
+    if (frame.end !== undefined) {
+      frameSpec += ` AND ${frame.end}`
+    }
+    if (frame.exclude !== undefined) {
+      frameSpec += ` EXCLUDE ${frame.exclude}`
+    }
+    return frameSpec
+  }
+
+  /**
+   * Builds CASE expression.
+   * @param cases - Array of CASE expressions
+   * @param escapeFn - Dialect-specific escape function
+   * @returns CASE expression SQL string
+   */
+  private static buildCaseExpression(
+    cases: { when: string; then: string | number; else?: string | number }[]
+  ): string {
+    let caseExpr: string = 'CASE'
+    for (const caseItem of cases) {
+      caseExpr += ` WHEN ${caseItem.when} THEN ${caseItem.then}`
+    }
+    if (cases.length > 0 && cases[cases.length - 1]?.else !== undefined) {
+      caseExpr += ` ELSE ${cases[cases.length - 1]?.else}`
+    }
+    caseExpr += ' END'
+    return caseExpr
   }
 }

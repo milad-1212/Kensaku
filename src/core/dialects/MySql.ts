@@ -9,7 +9,7 @@ import type {
   QueryDelete
 } from '@interfaces/index'
 import { Base } from '@core/dialects/index'
-import { ParameterBuilders, DialectFactory } from '@core/dialects/builders/index'
+import { ParameterBuilders, DialectFactory, QueryBuilders } from '@core/dialects/builders/index'
 import type { FieldPacket } from 'mysql2'
 
 /**
@@ -119,9 +119,15 @@ export class MySql extends Base {
     this.buildOrderByClause(query, parts)
     this.buildLimitClause(query, parts)
     this.buildOffsetClause(query, parts)
-    if (query.unions !== undefined && query.unions.length > 0) {
-      this.buildUnionClauses(query, parts, params)
-    }
+    QueryBuilders.buildWindowFunctions(query, parts, this.escapeIdentifier.bind(this))
+    QueryBuilders.buildConditionalExpressions(query, parts, this.escapeIdentifier.bind(this))
+    QueryBuilders.buildSetOperations(
+      query,
+      parts,
+      params,
+      this.escapeIdentifier.bind(this),
+      this.buildSelectQuery.bind(this)
+    )
     return {
       sql: parts.join(' '),
       params

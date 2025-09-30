@@ -44,6 +44,22 @@ export const errorMessages: {
   AGGREGATION: {
     PERCENTILE_REQUIRED: string
   }
+  CONDITIONAL: {
+    EMPTY_CASE_EXPRESSION: string
+    INVALID_CASE_WHEN: string
+    INVALID_CASE_THEN: string
+    COALESCE_REQUIRES_COLUMNS: string
+    NULLIF_REQUIRES_TWO_COLUMNS: string
+  }
+  WINDOW: {
+    INVALID_FRAME_TYPE: string
+    INVALID_FRAME_BOUNDS: string
+    NTILE_REQUIRES_POSITIVE: string
+  }
+  SET_OPERATIONS: {
+    INTERSECT_REQUIRES_QUERY: string
+    EXCEPT_REQUIRES_QUERY: string
+  }
   VALID_OPERATORS: string
 } = {
   VALIDATION: {
@@ -88,6 +104,22 @@ export const errorMessages: {
 
   AGGREGATION: {
     PERCENTILE_REQUIRED: 'Percentile function requires a percentile value'
+  },
+  CONDITIONAL: {
+    EMPTY_CASE_EXPRESSION: 'CASE expression cannot be empty',
+    INVALID_CASE_WHEN: 'CASE WHEN condition cannot be empty',
+    INVALID_CASE_THEN: 'CASE THEN value cannot be empty',
+    COALESCE_REQUIRES_COLUMNS: 'COALESCE requires at least one column',
+    NULLIF_REQUIRES_TWO_COLUMNS: 'NULLIF requires exactly two columns'
+  },
+  WINDOW: {
+    INVALID_FRAME_TYPE: 'Invalid window frame type',
+    INVALID_FRAME_BOUNDS: 'Invalid window frame bounds',
+    NTILE_REQUIRES_POSITIVE: 'NTILE requires positive number of buckets'
+  },
+  SET_OPERATIONS: {
+    INTERSECT_REQUIRES_QUERY: 'INTERSECT requires a query',
+    EXCEPT_REQUIRES_QUERY: 'EXCEPT requires a query'
   },
   VALID_OPERATORS: [
     '=',
