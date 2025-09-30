@@ -1,4 +1,4 @@
-import type { QuerySelect, QuerySubQuery } from '@interfaces/index'
+import type { QuerySelect, QuerySubQuery, QueryStatement } from '@interfaces/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { SelectMixin } from '@builders/mixins/index'
 import { Base } from '@core/dialects/index'
@@ -9,7 +9,7 @@ import { QueryValidator } from '@core/security/index'
  * @description Provides core SELECT functionality including column selection, FROM clause, and basic query building.
  * @template T - Return type of query results
  */
-export abstract class SelectBaseBuilder<T = unknown> extends BaseQueryBuilder<T> {
+export abstract class SelectBaseBuilderX<T = unknown> extends BaseQueryBuilder<T> {
   /** Internal query object that stores the SELECT query structure */
   protected readonly query: QuerySelect = {}
 
@@ -65,7 +65,7 @@ export abstract class SelectBaseBuilder<T = unknown> extends BaseQueryBuilder<T>
    * Builds the final SQL query and parameters.
    * @returns Object containing SQL string and parameters
    */
-  protected buildQuery(): { sql: string; params: unknown[] } {
+  protected buildQuery(): QueryStatement {
     QueryValidator.validateSelectQuery(this.query)
     const dialect: Base = this.connectionManager.getDialect()
     return dialect.buildSelectQuery(this.query)

@@ -6,10 +6,13 @@ import type {
   QuerySelect,
   QueryInsert,
   QueryUpdate,
-  QueryDelete
+  QueryDelete,
+  QueryMerge,
+  QueryStatement
 } from '@interfaces/index'
 import { Base } from '@core/dialects/Base'
 import { ParameterBuilders, DialectFactory, QueryBuilders } from '@core/dialects/builders/index'
+import { errorMessages } from '@constants/index'
 
 /**
  * PostgreSQL database dialect implementation.
@@ -89,7 +92,7 @@ export class Postgres extends Base {
    * @param query - SELECT query object
    * @returns Object containing SQL string and parameters
    */
-  buildSelectQuery(query: QuerySelect): { sql: string; params: unknown[] } {
+  buildSelectQuery(query: QuerySelect): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     if (query.ctes !== undefined && query.ctes.length > 0) {
@@ -122,7 +125,7 @@ export class Postgres extends Base {
    * @param query - INSERT query object
    * @returns Object containing SQL string and parameters
    */
-  buildInsertQuery(query: QueryInsert): { sql: string; params: unknown[] } {
+  buildInsertQuery(query: QueryInsert): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     parts.push('INSERT INTO', this.escapeIdentifier(query.into))
@@ -130,7 +133,6 @@ export class Postgres extends Base {
       const columns: string[] = Object.keys(query.values[0])
       const columnList: string = columns.map((col: string) => this.escapeIdentifier(col)).join(', ')
       parts.push(`(${columnList})`)
-
       const valueRows: string[] = query.values.map((row: Record<string, unknown>) => {
         const values: string = columns
           .map((col: string) => this.addParam(row[col], params))
@@ -144,8 +146,25 @@ export class Postgres extends Base {
       const values: string = columns
         .map((col: string) => this.addParam((query.values as Record<string, unknown>)[col], params))
         .join(', ')
-
       parts.push(`(${columnList})`, 'VALUES', `(${values})`)
+    }
+    if (query.conflict) {
+      const target: string = query.conflict.target
+        .map((col: string) => this.escapeIdentifier(col))
+        .join(', ')
+      parts.push('ON CONFLICT', `(${target})`)
+      if (query.conflict.action === 'DO_UPDATE' && query.conflict.update) {
+        const setClauses: string[] = Object.entries(query.conflict.update).map(
+          ([col, val]: [string, unknown]) =>
+            `${this.escapeIdentifier(col)} = ${this.addParam(val, params)}`
+        )
+        parts.push('DO UPDATE SET', setClauses.join(', '))
+        if (query.conflict.where) {
+          parts.push('WHERE', this.buildWhereConditions(query.conflict.where, params))
+        }
+      } else {
+        parts.push('DO NOTHING')
+      }
     }
     if (query.returning !== undefined && query.returning.length > 0) {
       const columns: string = query.returning
@@ -164,7 +183,7 @@ export class Postgres extends Base {
    * @param query - UPDATE query object
    * @returns Object containing SQL string and parameters
    */
-  buildUpdateQuery(query: QueryUpdate): { sql: string; params: unknown[] } {
+  buildUpdateQuery(query: QueryUpdate): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     parts.push('UPDATE', this.escapeIdentifier(query.table))
@@ -196,7 +215,7 @@ export class Postgres extends Base {
    * @param query - DELETE query object
    * @returns Object containing SQL string and parameters
    */
-  buildDeleteQuery(query: QueryDelete): { sql: string; params: unknown[] } {
+  buildDeleteQuery(query: QueryDelete): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     parts.push('DELETE FROM', this.escapeIdentifier(query.from))
@@ -289,6 +308,57 @@ export class Postgres extends Base {
       parts.push(`OFFSET ${offset}`)
     }
     return parts.join(' ')
+  }
+
+  /**
+   * Builds a MERGE query for PostgreSQL.
+   * @param query - MERGE query object
+   * @returns Object containing SQL string and parameters
+   */
+  buildMergeQuery(query: QueryMerge): QueryStatement {
+    const parts: string[] = []
+    const params: unknown[] = []
+    parts.push('MERGE INTO', this.escapeIdentifier(query.into))
+    if (typeof query.using === 'string') {
+      parts.push('USING', this.escapeIdentifier(query.using))
+    } else {
+      parts.push('USING', `(${query.using.query})`)
+      params.push(...query.using.params)
+    }
+    parts.push('ON', this.buildWhereConditions(query.on, params))
+    if (query.whenMatched?.update) {
+      const setClauses: string[] = Object.entries(query.whenMatched.update).map(
+        ([col, val]: [string, unknown]) =>
+          `${this.escapeIdentifier(col)} = ${this.addParam(val, params)}`
+      )
+      parts.push('WHEN MATCHED THEN UPDATE SET', setClauses.join(', '))
+    }
+    if (query.whenMatched?.delete === true) {
+      parts.push('WHEN MATCHED THEN DELETE')
+    }
+    if (query.whenNotMatched?.insert) {
+      const columns: string[] = Object.keys(query.whenNotMatched.insert)
+      const values: string[] = columns.map((col: string) => {
+        const insertData: Record<string, unknown> | undefined = query.whenNotMatched?.insert
+        if (!insertData) {
+          throw new Error(errorMessages.QUERY.MERGE_INSERT_DATA_REQUIRED)
+        }
+        return this.addParam(insertData[col], params)
+      })
+      parts.push(
+        'WHEN NOT MATCHED THEN INSERT',
+        `(${columns.map((col: string) => this.escapeIdentifier(col)).join(', ')})`,
+        'VALUES',
+        `(${values.join(', ')})`
+      )
+    }
+    if (query.returning && query.returning.length > 0) {
+      parts.push(
+        'RETURNING',
+        query.returning.map((col: string) => this.escapeIdentifier(col)).join(', ')
+      )
+    }
+    return { sql: parts.join(' '), params }
   }
 
   /**

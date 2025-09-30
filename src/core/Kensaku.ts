@@ -6,7 +6,13 @@ import type {
   QueryBuilder
 } from '@interfaces/index'
 import { Connection as ConnectionManager, QueryEngine } from '@core/index'
-import { DeleteBuilder, InsertBuilder, SelectBuilder, UpdateBuilder } from '@builders/index'
+import {
+  DeleteBuilder,
+  InsertBuilder,
+  SelectBuilder,
+  UpdateBuilder,
+  MergeBuilder
+} from '@builders/index'
 
 /**
  * Main Kensaku class that provides a fluent interface for building and executing SQL queries.
@@ -81,6 +87,14 @@ export class Kensaku {
    */
   query(): QueryBuilder {
     return this.queryEngine.createQuery()
+  }
+
+  /**
+   * Creates a new MERGE query builder instance.
+   * @returns A new MergeBuilder instance for building MERGE queries
+   */
+  merge(): MergeBuilder {
+    return this.queryEngine.merge()
   }
 
   /**

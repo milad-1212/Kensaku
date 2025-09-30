@@ -1,0 +1,71 @@
+/**
+ * Interface for error map.
+ */
+export interface ErrorMap {
+  VALIDATION: {
+    EMPTY_COLUMN: string
+    EMPTY_RAW_SQL: string
+    EMPTY_TABLE: string
+    EMPTY_SUBQUERY: string
+    INVALID_PERCENTILE: string
+    INVALID_ORDER_DIRECTION: string
+    INVALID_IDENTIFIER: string
+    INVALID_FUNCTION_PARAMETER: string
+    INVALID_COLUMN_ALIAS: string
+    INVALID_COLUMN_ALIAS_FORMAT: string
+    INVALID_COLUMN_NAME: string
+    INVALID_OPERATOR: string
+    INVALID_DATABASE_TYPE: string
+    INVALID_DATABASE: string
+  }
+  QUERY: {
+    SELECT_MISSING_FROM: string
+    INSERT_MISSING_INTO: string
+    INSERT_MISSING_VALUES: string
+    INSERT_NO_VALUES: string
+    INSERT_SINGLE_ROW_VALUES: string
+    INSERT_BATCH_VALUES: string
+    UPDATE_MISSING_TABLE: string
+    UPDATE_MISSING_SET: string
+    DELETE_MISSING_FROM: string
+    DELETE_MISSING_WHERE: string
+    CONFLICT_EMPTY_TARGET: string
+    CONFLICT_UPDATE_REQUIRED: string
+    MERGE_MISSING_INTO: string
+    MERGE_MISSING_USING: string
+    MERGE_MISSING_ON: string
+    MERGE_MISSING_WHEN: string
+    MERGE_INSERT_DATA_REQUIRED: string
+  }
+  WHERE: {
+    INVALID_RAW_CONDITION: string
+    INVALID_COLUMN_NAME: string
+    INVALID_OPERATOR: string
+    INVALID_VALUE: string
+    COLUMN_NAMES_MUST_BE_STRINGS: string
+  }
+  JOIN: {
+    MISSING_TABLE: string
+    MISSING_ON_CONDITIONS: string
+  }
+  AGGREGATION: {
+    PERCENTILE_REQUIRED: string
+  }
+  CONDITIONAL: {
+    EMPTY_CASE_EXPRESSION: string
+    INVALID_CASE_WHEN: string
+    INVALID_CASE_THEN: string
+    COALESCE_REQUIRES_COLUMNS: string
+    NULLIF_REQUIRES_TWO_COLUMNS: string
+  }
+  WINDOW: {
+    INVALID_FRAME_TYPE: string
+    INVALID_FRAME_BOUNDS: string
+    NTILE_REQUIRES_POSITIVE: string
+  }
+  SET_OPERATIONS: {
+    INTERSECT_REQUIRES_QUERY: string
+    EXCEPT_REQUIRES_QUERY: string
+  }
+  VALID_OPERATORS: string
+}

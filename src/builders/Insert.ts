@@ -1,8 +1,14 @@
-import type { QueryInsert } from '@interfaces/index'
+import type {
+  QueryInsert,
+  QueryStatement,
+  QueryWhereCondition,
+  QueryConflictAction
+} from '@interfaces/index'
 import { ReturningClauseHelper } from '@builders/helpers/index'
 import { InsertMixin } from '@builders/mixins/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
+import { Base } from '@core/dialects/index'
 
 /**
  * Query builder for INSERT operations with fluent interface.
@@ -44,33 +50,43 @@ export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
   }
 
   /**
+   * Adds ON CONFLICT clause to the query.
+   * @param target - Target columns or constraint name
+   * @param action - Conflict action
+   * @returns This builder instance for method chaining
+   */
+  onConflict(target: string | string[], action: QueryConflictAction = 'DO_NOTHING'): this {
+    this.query.conflict = {
+      target: Array.isArray(target) ? target : [target],
+      action
+    }
+    return this
+  }
+
+  /**
+   * Adds ON CONFLICT DO UPDATE clause to the query.
+   * @param data - Data to update on conflict
+   * @param where - Optional WHERE conditions for the update
+   * @returns This builder instance for method chaining
+   */
+  onConflictUpdate(data: Record<string, unknown>, where?: QueryWhereCondition[]): this {
+    this.query.conflict = {
+      target: this.query.conflict?.target ?? [],
+      action: 'DO_UPDATE',
+      update: data,
+      ...where !== undefined && { where }
+    }
+    return this
+  }
+
+  /**
    * Builds the final SQL query and parameters.
    * @returns Object containing SQL string and parameters
    * @throws {Error} When query validation fails
    */
-  protected buildQuery(): { sql: string; params: unknown[] } {
+  protected buildQuery(): QueryStatement {
     QueryValidator.validateInsertQuery(this.query)
-    const parts: string[] = []
-    this.params = []
-    parts.push(InsertMixin.buildInsertClause(this.query, this.escapeIdentifier.bind(this)))
-    parts.push(
-      InsertMixin.buildValuesClause(
-        this.query,
-        this.escapeIdentifier.bind(this),
-        this.addParam.bind(this)
-      )
-    )
-    if (this.query.returning !== undefined && this.query.returning.length > 0) {
-      parts.push(
-        ReturningClauseHelper.buildReturningClause(
-          this.query.returning,
-          this.escapeIdentifier.bind(this)
-        )
-      )
-    }
-    return {
-      sql: parts.join(' '),
-      params: this.params
-    }
+    const dialect: Base = this.connectionManager.getDialect()
+    return dialect.buildInsertQuery(this.query)
   }
 }

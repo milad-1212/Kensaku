@@ -101,11 +101,11 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
       - [x] INTERSECT
       - [x] EXCEPT/MINUS
       - [x] Multiple set operations chaining
-    - [ ] **Advanced Query Features**
-      - [ ] LATERAL JOINs (PostgreSQL)
+    - [x] **Advanced Query Features**
+      - [x] LATERAL JOINs (PostgreSQL)
       - [ ] PIVOT/UNPIVOT operations
-      - [ ] MERGE/UPSERT statements
-      - [ ] ON CONFLICT handling (PostgreSQL)
+      - [x] MERGE/UPSERT statements
+      - [x] ON CONFLICT handling (PostgreSQL)
       - [ ] WITH ORDINALITY for table functions
       - [ ] Bulk operations (COPY, LOAD DATA)
       - [ ] Full-text search functions
@@ -186,11 +186,11 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
     - [x] SQL syntax variations
     - [x] Function name differences
     - [x] Data type differences
-- [ ] **Optimization**
-  - [ ] **Connection Optimization**
-    - [ ] Connection pooling
-    - [ ] Connection reuse
-    - [ ] Lazy connection initialization
+  - [x] **Optimization**
+  - [x] **Connection Optimization**
+    - [x] Connection pooling
+    - [x] Connection reuse
+    - [x] Lazy connection initialization
     - [ ] Connection health checks
   - [ ] **Batch Operations**
     - [ ] Bulk insert operations
@@ -213,6 +213,8 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
     - [x] Input validation (empty table names, invalid operators)
     - [x] Query validation and error handling
     - [x] Regex safety improvements
+    - [x] Centralized error message management
+    - [x] Type-safe error handling
     - [ ] Access control integration
     - [ ] Audit logging
 

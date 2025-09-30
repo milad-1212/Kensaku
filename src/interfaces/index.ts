@@ -4,4 +4,5 @@
  */
 export * from '@interfaces/Connection'
 export * from '@interfaces/Database'
+export * from '@interfaces/ErrorMap'
 export * from '@interfaces/Query'

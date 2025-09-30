@@ -1,4 +1,9 @@
-import type { QuerySelect, QueryWhereCondition, QueryJoinType } from '@interfaces/index'
+import type {
+  QuerySelect,
+  QueryWhereCondition,
+  QueryJoinType,
+  QueryJoinClause
+} from '@interfaces/index'
 
 /**
  * Helper class for JOIN query operations.
@@ -78,5 +83,36 @@ export class JoinMixin {
       table,
       on: []
     })
+  }
+
+  /**
+   * Adds a LATERAL JOIN to the query.
+   * @param query - Query object to modify
+   * @param table - Table to join
+   * @param on - Join conditions
+   * @param functionName - Optional function name for table functions
+   * @param params - Optional function parameters
+   */
+  static addLateralJoin(
+    query: QuerySelect,
+    table: string,
+    on: QueryWhereCondition[],
+    functionName?: string,
+    params?: unknown[]
+  ): void {
+    query.joins ??= []
+    const joinClause: QueryJoinClause = {
+      type: 'LATERAL',
+      table,
+      on,
+      lateral: true
+    }
+    if (functionName !== undefined) {
+      joinClause.function = functionName
+    }
+    if (params !== undefined) {
+      joinClause.params = params
+    }
+    query.joins.push(joinClause)
   }
 }

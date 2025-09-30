@@ -1,6 +1,12 @@
 import type { QueryBuilder } from '@interfaces/index'
 import { Connection as ConnectionManager } from '@core/index'
-import { SelectBuilder, InsertBuilder, UpdateBuilder, DeleteBuilder } from '@builders/index'
+import {
+  SelectBuilder,
+  InsertBuilder,
+  UpdateBuilder,
+  DeleteBuilder,
+  MergeBuilder
+} from '@builders/index'
 
 /**
  * Query engine that creates and manages query builders.
@@ -61,5 +67,13 @@ export class QueryEngine {
    */
   createQuery(): QueryBuilder {
     return new SelectBuilder(this.connectionManager)
+  }
+
+  /**
+   * Creates a new MERGE query builder.
+   * @returns A new MergeBuilder instance
+   */
+  merge(): MergeBuilder {
+    return new MergeBuilder(this.connectionManager)
   }
 }

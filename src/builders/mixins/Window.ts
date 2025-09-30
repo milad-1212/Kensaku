@@ -1,4 +1,5 @@
 import type { QuerySelect, QueryWindowSpec } from '@interfaces/index'
+import { errorMessages } from '@constants/index'
 
 /**
  * Helper class for window function operations.
@@ -124,7 +125,7 @@ export class WindowMixin {
    */
   static addNtile(query: QuerySelect, buckets: number, over?: QueryWindowSpec): void {
     if (buckets <= 0) {
-      throw new Error('NTILE requires positive number of buckets')
+      throw new Error(errorMessages.WINDOW.NTILE_REQUIRES_POSITIVE)
     }
     query.windowFunctions ??= []
     query.windowFunctions.push({

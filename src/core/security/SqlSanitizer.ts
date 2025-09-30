@@ -1,4 +1,4 @@
-import type { DatabaseType } from '@interfaces/index'
+import type { DatabaseType, QueryStatement } from '@interfaces/index'
 import {
   errorMessages,
   getInvalidIdentifierError,
@@ -163,10 +163,7 @@ export class SqlSanitizer {
    * @param params - Array of parameters to sanitize
    * @returns Object containing SQL and sanitized parameters
    */
-  static buildParameterizedQuery(
-    sql: string,
-    params: unknown[]
-  ): { sql: string; params: unknown[] } {
+  static buildParameterizedQuery(sql: string, params: unknown[]): QueryStatement {
     return {
       sql,
       params: params.map((param: unknown) => this.sanitizeValue(param))
@@ -238,6 +235,9 @@ export class SqlSanitizer {
    * @returns True if it's a complex parameter
    */
   private static isComplexParameter(parameter: string): boolean {
+    if (/^\d+$/.test(parameter)) {
+      return true
+    }
     const complexParamPatterns: RegExp[] = [
       /^[A-Z_]+\s+FROM\s+[a-z]\w*$/i,
       /^[A-Z_]+\s+FROM\s+[a-z]\w*\.[a-z]\w*$/i

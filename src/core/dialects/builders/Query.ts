@@ -4,7 +4,8 @@ import type {
   QueryComparisonOperator,
   QuerySelect,
   QueryWhereCondition,
-  QueryWindowFunction
+  QueryWindowFunction,
+  QueryStatement
 } from '@interfaces/index'
 
 /**
@@ -390,13 +391,11 @@ export class QueryBuilders {
     parts: string[],
     params: unknown[],
     _escapeFn: (name: string) => string,
-    buildSelectQueryFn: (query: QuerySelect) => { sql: string; params: unknown[] }
+    buildSelectQueryFn: (query: QuerySelect) => QueryStatement
   ): void {
     if (query.unions !== undefined && query.unions.length > 0) {
       for (const union of query.unions) {
-        const { sql, params: unionParams }: { sql: string; params: unknown[] } = buildSelectQueryFn(
-          union.query
-        )
+        const { sql, params: unionParams }: QueryStatement = buildSelectQueryFn(union.query)
         parts.push(union.type, sql)
         params.push(...unionParams)
       }

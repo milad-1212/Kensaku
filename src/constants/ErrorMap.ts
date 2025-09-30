@@ -1,67 +1,9 @@
+import type { ErrorMap } from '@interfaces/index'
+
 /**
  * Centralized error messages for Kensaku query builder.
  */
-export const errorMessages: {
-  VALIDATION: {
-    EMPTY_COLUMN: string
-    EMPTY_RAW_SQL: string
-    EMPTY_TABLE: string
-    EMPTY_SUBQUERY: string
-    INVALID_PERCENTILE: string
-    INVALID_ORDER_DIRECTION: string
-    INVALID_IDENTIFIER: string
-    INVALID_FUNCTION_PARAMETER: string
-    INVALID_COLUMN_ALIAS: string
-    INVALID_COLUMN_ALIAS_FORMAT: string
-    INVALID_COLUMN_NAME: string
-    INVALID_OPERATOR: string
-    INVALID_DATABASE_TYPE: string
-    INVALID_DATABASE: string
-  }
-  QUERY: {
-    SELECT_MISSING_FROM: string
-    INSERT_MISSING_INTO: string
-    INSERT_MISSING_VALUES: string
-    INSERT_NO_VALUES: string
-    INSERT_SINGLE_ROW_VALUES: string
-    INSERT_BATCH_VALUES: string
-    UPDATE_MISSING_TABLE: string
-    UPDATE_MISSING_SET: string
-    DELETE_MISSING_FROM: string
-    DELETE_MISSING_WHERE: string
-  }
-  WHERE: {
-    INVALID_RAW_CONDITION: string
-    INVALID_COLUMN_NAME: string
-    INVALID_OPERATOR: string
-    INVALID_VALUE: string
-    COLUMN_NAMES_MUST_BE_STRINGS: string
-  }
-  JOIN: {
-    MISSING_TABLE: string
-    MISSING_ON_CONDITIONS: string
-  }
-  AGGREGATION: {
-    PERCENTILE_REQUIRED: string
-  }
-  CONDITIONAL: {
-    EMPTY_CASE_EXPRESSION: string
-    INVALID_CASE_WHEN: string
-    INVALID_CASE_THEN: string
-    COALESCE_REQUIRES_COLUMNS: string
-    NULLIF_REQUIRES_TWO_COLUMNS: string
-  }
-  WINDOW: {
-    INVALID_FRAME_TYPE: string
-    INVALID_FRAME_BOUNDS: string
-    NTILE_REQUIRES_POSITIVE: string
-  }
-  SET_OPERATIONS: {
-    INTERSECT_REQUIRES_QUERY: string
-    EXCEPT_REQUIRES_QUERY: string
-  }
-  VALID_OPERATORS: string
-} = {
+export const errorMessages: ErrorMap = {
   VALIDATION: {
     EMPTY_COLUMN: 'Column name cannot be empty or null',
     EMPTY_RAW_SQL: 'Raw SQL cannot be empty or null',
@@ -88,7 +30,14 @@ export const errorMessages: {
     UPDATE_MISSING_TABLE: 'UPDATE query must have a table',
     UPDATE_MISSING_SET: 'UPDATE query must have a SET clause',
     DELETE_MISSING_FROM: 'DELETE query must have a FROM clause',
-    DELETE_MISSING_WHERE: 'DELETE query must have a WHERE clause for safety'
+    DELETE_MISSING_WHERE: 'DELETE query must have a WHERE clause for safety',
+    CONFLICT_EMPTY_TARGET: 'ON CONFLICT target cannot be empty',
+    CONFLICT_UPDATE_REQUIRED: 'ON CONFLICT DO UPDATE requires update data',
+    MERGE_MISSING_INTO: 'MERGE query must have an INTO clause',
+    MERGE_MISSING_USING: 'MERGE query must have a USING clause',
+    MERGE_MISSING_ON: 'MERGE query must have ON conditions',
+    MERGE_MISSING_WHEN: 'MERGE query must have WHEN MATCHED or WHEN NOT MATCHED clause',
+    MERGE_INSERT_DATA_REQUIRED: 'Insert data is required for WHEN NOT MATCHED'
   },
   WHERE: {
     INVALID_RAW_CONDITION: 'RAW WHERE condition must have a valid SQL string',

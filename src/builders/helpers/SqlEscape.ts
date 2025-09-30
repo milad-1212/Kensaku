@@ -1,5 +1,5 @@
 import { SqlSanitizer } from '@core/security/index'
-import type { DatabaseType } from '@interfaces/index'
+import type { DatabaseType, QueryStatement } from '@interfaces/index'
 
 /**
  * Helper class for SQL escaping and sanitization.
@@ -131,10 +131,7 @@ export class SqlEscapeHelper {
    * @param params - Array of parameters to sanitize
    * @returns Object containing SQL and sanitized parameters
    */
-  static buildParameterizedQuery(
-    sql: string,
-    params: unknown[]
-  ): { sql: string; params: unknown[] } {
+  static buildParameterizedQuery(sql: string, params: unknown[]): QueryStatement {
     return SqlSanitizer.buildParameterizedQuery(sql, params)
   }
 

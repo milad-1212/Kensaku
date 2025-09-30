@@ -4,7 +4,9 @@ import type {
   QueryCTEClause,
   QueryDelete,
   QueryInsert,
+  QueryMerge,
   QuerySelect,
+  QueryStatement,
   QueryUpdate,
   QueryWhereCondition
 } from '@interfaces/index'
@@ -38,28 +40,35 @@ export abstract class Base {
    * @param query - SELECT query object
    * @returns Object containing SQL string and parameters
    */
-  abstract buildSelectQuery(query: QuerySelect): { sql: string; params: unknown[] }
+  abstract buildSelectQuery(query: QuerySelect): QueryStatement
 
   /**
    * Builds an INSERT query for this dialect.
    * @param query - INSERT query object
    * @returns Object containing SQL string and parameters
    */
-  abstract buildInsertQuery(query: QueryInsert): { sql: string; params: unknown[] }
+  abstract buildInsertQuery(query: QueryInsert): QueryStatement
 
   /**
    * Builds an UPDATE query for this dialect.
    * @param query - UPDATE query object
    * @returns Object containing SQL string and parameters
    */
-  abstract buildUpdateQuery(query: QueryUpdate): { sql: string; params: unknown[] }
+  abstract buildUpdateQuery(query: QueryUpdate): QueryStatement
 
   /**
    * Builds a DELETE query for this dialect.
    * @param query - DELETE query object
    * @returns Object containing SQL string and parameters
    */
-  abstract buildDeleteQuery(query: QueryDelete): { sql: string; params: unknown[] }
+  abstract buildDeleteQuery(query: QueryDelete): QueryStatement
+
+  /**
+   * Builds a MERGE query for this dialect.
+   * @param query - MERGE query object
+   * @returns Object containing SQL string and parameters
+   */
+  abstract buildMergeQuery(query: QueryMerge): QueryStatement
 
   /**
    * Escapes a database identifier for this dialect.
@@ -100,8 +109,7 @@ export abstract class Base {
     const cteParts: string[] = []
     for (const cte of query.ctes ?? []) {
       const cteName: string = this.escapeIdentifier(cte.name)
-      const { sql: cteSql, params: cteParams }: { sql: string; params: unknown[] } =
-        this.buildSelectQuery(cte.query)
+      const { sql: cteSql, params: cteParams }: QueryStatement = this.buildSelectQuery(cte.query)
       cteParts.push(`${cteName} AS (${cteSql})`)
       params.push(...cteParams)
     }
@@ -120,8 +128,9 @@ export abstract class Base {
    */
   public buildUnionClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
     for (const union of query.unions ?? []) {
-      const { sql: unionSql, params: unionParams }: { sql: string; params: unknown[] } =
-        this.buildSelectQuery(union.query)
+      const { sql: unionSql, params: unionParams }: QueryStatement = this.buildSelectQuery(
+        union.query
+      )
       parts.push(union.type, unionSql)
       params.push(...unionParams)
     }
@@ -168,7 +177,7 @@ export abstract class Base {
     parts: string[],
     params: unknown[],
     escapeFn: (name: string) => string,
-    buildSelectQueryFn: (query: QuerySelect) => { sql: string; params: unknown[] }
+    buildSelectQueryFn: (query: QuerySelect) => QueryStatement
   ): void {
     QueryBuilders.buildSetOperations(query, parts, params, escapeFn, buildSelectQueryFn)
   }

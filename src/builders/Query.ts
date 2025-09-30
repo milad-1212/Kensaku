@@ -1,6 +1,6 @@
-import type { QueryBuilder, DatabaseType } from '@interfaces/index'
-import { Connection as ConnectionManager } from '@core/index'
 import { SqlEscapeHelper } from '@builders/helpers/index'
+import { Connection as ConnectionManager } from '@core/index'
+import type { QueryBuilder, DatabaseType, QueryStatement } from '@interfaces/index'
 
 /**
  * Abstract base class for all query builders.
@@ -29,7 +29,7 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
     const connection: Awaited<ReturnType<ConnectionManager['getConnection']>> =
       await this.connectionManager.getConnection()
     try {
-      const { sql, params }: { sql: string; params: unknown[] } = this.buildQuery()
+      const { sql, params }: QueryStatement = this.buildQuery()
       const result: Awaited<ReturnType<typeof connection.query>> = await connection.query(
         sql,
         params
@@ -64,7 +64,7 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
    * Abstract method to build the SQL query and parameters.
    * @returns Object containing SQL string and parameters
    */
-  protected abstract buildQuery(): { sql: string; params: unknown[] }
+  protected abstract buildQuery(): QueryStatement
 
   /**
    * Adds a parameter to the query and returns its placeholder.

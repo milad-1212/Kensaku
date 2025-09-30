@@ -4,6 +4,7 @@
  */
 export * from '@builders/Delete'
 export * from '@builders/Insert'
+export * from '@builders/Merge'
 export * from '@builders/Query'
 export * from '@builders/Select'
 export * from '@builders/Update'

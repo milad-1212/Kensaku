@@ -1,6 +1,7 @@
 import type { QueryCaseExpression, QueryComparisonOperator } from '@interfaces/index'
 import { SelectAggregationBuilder } from '@builders/abstracts/SelectAggregation'
 import { ConditionalMixin } from '@builders/mixins/index'
+import { errorMessages } from '@constants/index'
 
 /**
  * Abstract class for SELECT query building with conditional expressions.
@@ -104,7 +105,7 @@ class CaseBuilder {
    */
   then(value: string | number): this {
     if (this.cases.length === 0) {
-      throw new Error('CASE expression must have at least one WHEN clause')
+      throw new Error(errorMessages.CONDITIONAL.INVALID_CASE_WHEN)
     }
     const lastCase: QueryCaseExpression | undefined = this.cases[this.cases.length - 1]
     if (lastCase) {

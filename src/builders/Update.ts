@@ -1,4 +1,9 @@
-import type { QueryUpdate, QueryWhereCondition, QueryComparisonOperator } from '@interfaces/index'
+import type {
+  QueryUpdate,
+  QueryWhereCondition,
+  QueryComparisonOperator,
+  QueryStatement
+} from '@interfaces/index'
 import { ReturningClauseHelper, WhereConditionHelper } from '@builders/helpers/index'
 import { UpdateMixin, WhereMixin } from '@builders/mixins/index'
 import { BaseQueryBuilder } from '@builders/Query'
@@ -138,7 +143,7 @@ export class UpdateBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns Object containing SQL string and parameters
    * @throws {Error} When query validation fails
    */
-  protected buildQuery(): { sql: string; params: unknown[] } {
+  protected buildQuery(): QueryStatement {
     QueryValidator.validateUpdateQuery(this.query)
     const parts: string[] = []
     this.params = []

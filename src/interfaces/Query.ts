@@ -1,26 +1,27 @@
 /**
- * Base interface for all query builders.
- * @template T - Return type of query results
+ * Supported aggregation functions.
  */
-export interface QueryBuilder<T = unknown> {
-  /**
-   * Returns the SQL string for this query.
-   * @returns SQL query string
-   */
-  toSQL(): string
-
-  /**
-   * Returns the parameters for this query.
-   * @returns Array of query parameters
-   */
-  toParams(): unknown[]
-
-  /**
-   * Executes the query and returns the results.
-   * @returns Promise that resolves to an array of results
-   */
-  execute(): Promise<T[]>
-}
+export type QueryAggregationFunction =
+  | 'COUNT'
+  | 'SUM'
+  | 'AVG'
+  | 'MAX'
+  | 'MIN'
+  | 'STDDEV'
+  | 'STDDEV_POP'
+  | 'STDDEV_SAMP'
+  | 'VARIANCE'
+  | 'VAR_POP'
+  | 'VAR_SAMP'
+  | 'PERCENTILE_CONT'
+  | 'PERCENTILE_DISC'
+  | 'MODE'
+  | 'GROUP_CONCAT'
+  | 'STRING_AGG'
+  | 'ARRAY_AGG'
+  | 'JSON_AGG'
+  | 'JSON_OBJECT_AGG'
+  | 'JSON_ARRAY_AGG'
 
 /**
  * Supported comparison operators for WHERE conditions.
@@ -52,29 +53,29 @@ export type QueryComparisonOperator =
   | 'RAW'
 
 /**
- * Supported aggregation functions.
+ * Supported conflict actions.
  */
-export type QueryAggregationFunction =
-  | 'COUNT'
-  | 'SUM'
-  | 'AVG'
-  | 'MAX'
-  | 'MIN'
-  | 'STDDEV'
-  | 'STDDEV_POP'
-  | 'STDDEV_SAMP'
-  | 'VARIANCE'
-  | 'VAR_POP'
-  | 'VAR_SAMP'
-  | 'PERCENTILE_CONT'
-  | 'PERCENTILE_DISC'
-  | 'MODE'
-  | 'GROUP_CONCAT'
-  | 'STRING_AGG'
-  | 'ARRAY_AGG'
-  | 'JSON_AGG'
-  | 'JSON_OBJECT_AGG'
-  | 'JSON_ARRAY_AGG'
+export type QueryConflictAction = 'DO_NOTHING' | 'DO_UPDATE'
+
+/**
+ * Supported sort directions.
+ */
+export type QueryDirectionType = 'ASC' | 'DESC'
+
+/**
+ * Supported join types.
+ */
+export type QueryJoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS' | 'LATERAL'
+
+/**
+ * Supported set operation types.
+ */
+export type QuerySetOperation = 'UNION' | 'UNION ALL' | 'INTERSECT' | 'EXCEPT' | 'MINUS'
+
+/**
+ * Supported query types.
+ */
+export type QueryType = 'select' | 'insert' | 'update' | 'delete' | 'raw'
 
 /**
  * Interface for aggregation expressions.
@@ -97,140 +98,27 @@ export interface QueryAggregationExpression {
 }
 
 /**
- * Interface for DELETE query structure.
+ * Base interface for all query builders.
+ * @template T - Return type of query results
  */
-export interface QueryDelete {
-  /** Table name to delete from */
-  from: string
-  /** Optional WHERE conditions */
-  where?: QueryWhereCondition[]
-  /** Optional columns to return after delete */
-  returning?: string[]
-}
+export interface QueryBuilder<T = unknown> {
+  /**
+   * Returns the SQL string for this query.
+   * @returns SQL query string
+   */
+  toSQL(): string
 
-/**
- * Interface for INSERT query structure.
- */
-export interface QueryInsert {
-  /** Table name to insert into */
-  into: string
-  /** Data to insert as object or array of objects */
-  values: Record<string, unknown> | Record<string, unknown>[]
-  /** Optional columns to return after insert */
-  returning?: string[]
-}
+  /**
+   * Returns the parameters for this query.
+   * @returns Array of query parameters
+   */
+  toParams(): unknown[]
 
-/**
- * Interface for JOIN clause structure.
- */
-export interface QueryJoinClause {
-  /** Type of join */
-  type: QueryJoinType
-  /** Table to join or subquery */
-  table: string | QuerySubQuery
-  /** Join conditions */
-  on: QueryWhereCondition[]
-}
-
-/**
- * Supported join types.
- */
-export type QueryJoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS'
-
-/**
- * Supported sort directions.
- */
-export type QueryDirectionType = 'ASC' | 'DESC'
-
-/**
- * Interface for ORDER BY clause structure.
- */
-export interface QueryOrderClause {
-  /** Column name or expression to order by */
-  column: string
-  /** Sort direction */
-  direction: QueryDirectionType
-  /** Whether this is a raw expression (not just a column) */
-  isExpression?: boolean
-  /** Parameters for raw expressions */
-  params?: unknown[]
-}
-
-/**
- * Interface for raw SQL query structure.
- */
-export interface QueryRawQuery {
-  /** SQL query string */
-  sql: string
-  /** Query parameters */
-  params: unknown[]
-}
-
-/**
- * Supported set operation types.
- */
-export type QuerySetOperation = 'UNION' | 'UNION ALL' | 'INTERSECT' | 'EXCEPT' | 'MINUS'
-
-/**
- * Interface for set operation clause structure.
- */
-export interface QueryUnionClause {
-  /** Type of set operation */
-  type: QuerySetOperation
-  /** Query to perform operation with */
-  query: QuerySelect
-}
-
-/**
- * Interface for Common Table Expression (CTE) structure.
- */
-export interface QueryCTEClause {
-  /** CTE name */
-  name: string
-  /** CTE query */
-  query: QuerySelect
-  /** Whether this is a recursive CTE */
-  recursive?: boolean
-}
-
-/**
- * Interface for Window Function structure.
- */
-export interface QueryWindowFunction {
-  /** Function name */
-  function:
-    | 'ROW_NUMBER'
-    | 'RANK'
-    | 'DENSE_RANK'
-    | 'LAG'
-    | 'LEAD'
-    | 'FIRST_VALUE'
-    | 'LAST_VALUE'
-    | 'NTILE'
-    | 'CUME_DIST'
-    | 'PERCENT_RANK'
-    | 'NTH_VALUE'
-  /** Function arguments */
-  args?: string[]
-  /** Window specification */
-  over?: QueryWindowSpec
-}
-
-/**
- * Interface for Window specification.
- */
-export interface QueryWindowSpec {
-  /** Partition by columns */
-  partitionBy?: string[]
-  /** Order by clauses */
-  orderBy?: QueryOrderClause[]
-  /** Window frame specification */
-  frame?: {
-    type: 'ROWS' | 'RANGE' | 'GROUPS'
-    start: string | number
-    end?: string | number
-    exclude?: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS'
-  }
+  /**
+   * Executes the query and returns the results.
+   * @returns Promise that resolves to an array of results
+   */
+  execute(): Promise<T[]>
 }
 
 /**
@@ -261,6 +149,125 @@ export interface QueryConditionalExpression {
   column2?: string
   /** Optional alias */
   alias?: string
+}
+/**
+ * Interface for ON CONFLICT clause structure.
+ */
+export interface QueryConflictClause {
+  /** Target columns or constraint name */
+  target: string[]
+  /** Conflict action */
+  action: QueryConflictAction
+  /** Update data for DO_UPDATE action */
+  update?: Record<string, unknown>
+  /** WHERE conditions for DO_UPDATE action */
+  where?: QueryWhereCondition[]
+}
+
+/**
+ * Interface for Common Table Expression (CTE) structure.
+ */
+export interface QueryCTEClause {
+  /** CTE name */
+  name: string
+  /** CTE query */
+  query: QuerySelect
+  /** Whether this is a recursive CTE */
+  recursive?: boolean
+}
+
+/**
+ * Interface for DELETE query structure.
+ */
+export interface QueryDelete {
+  /** Table name to delete from */
+  from: string
+  /** Optional WHERE conditions */
+  where?: QueryWhereCondition[]
+  /** Optional columns to return after delete */
+  returning?: string[]
+}
+
+/**
+ * Interface for INSERT query structure.
+ */
+export interface QueryInsert {
+  /** Table name to insert into */
+  into: string
+  /** Data to insert as object or array of objects */
+  values: Record<string, unknown> | Record<string, unknown>[]
+  /** Optional columns to return after insert */
+  returning?: string[]
+  /** Optional ON CONFLICT clause */
+  conflict?: QueryConflictClause
+}
+
+/**
+ * Interface for JOIN clause structure.
+ */
+export interface QueryJoinClause {
+  /** Type of join */
+  type: QueryJoinType
+  /** Table to join or subquery */
+  table: string | QuerySubQuery
+  /** Join conditions */
+  on: QueryWhereCondition[]
+  /** Whether this is a lateral join (for LATERAL type) */
+  lateral?: boolean
+  /** Function name for table functions (for LATERAL type) */
+  function?: string
+  /** Function parameters (for LATERAL type) */
+  params?: unknown[]
+}
+
+/**
+ * Interface for MERGE query structure.
+ */
+export interface QueryMerge {
+  /** Target table name */
+  into: string
+  /** Source table or subquery */
+  using: string | QuerySubQuery
+  /** Join conditions */
+  on: QueryWhereCondition[]
+  /** WHEN MATCHED clause */
+  whenMatched?: {
+    /** Update data */
+    update?: Record<string, unknown>
+    /** Delete flag */
+    delete?: boolean
+  }
+  /** WHEN NOT MATCHED clause */
+  whenNotMatched?: {
+    /** Insert data */
+    insert: Record<string, unknown>
+  }
+  /** Columns to return */
+  returning?: string[]
+}
+
+/**
+ * Interface for ORDER BY clause structure.
+ */
+export interface QueryOrderClause {
+  /** Column name or expression to order by */
+  column: string
+  /** Sort direction */
+  direction: QueryDirectionType
+  /** Whether this is a raw expression (not just a column) */
+  isExpression?: boolean
+  /** Parameters for raw expressions */
+  params?: unknown[]
+}
+
+/**
+ * Interface for raw SQL query structure.
+ */
+export interface QueryRawQuery {
+  /** SQL query string */
+  sql: string
+  /** Query parameters */
+  params: unknown[]
 }
 
 /**
@@ -304,6 +311,16 @@ export interface QuerySelect {
 }
 
 /**
+ * Interface for statement structure.
+ */
+export interface QueryStatement {
+  /** SQL query string */
+  sql: string
+  /** Query parameters */
+  params: unknown[]
+}
+
+/**
  * Interface for subquery structure.
  */
 export interface QuerySubQuery {
@@ -316,9 +333,14 @@ export interface QuerySubQuery {
 }
 
 /**
- * Supported query types.
+ * Interface for set operation clause structure.
  */
-export type QueryType = 'select' | 'insert' | 'update' | 'delete' | 'raw'
+export interface QueryUnionClause {
+  /** Type of set operation */
+  type: QuerySetOperation
+  /** Query to perform operation with */
+  query: QuerySelect
+}
 
 /**
  * Interface for UPDATE query structure.
@@ -346,4 +368,44 @@ export interface QueryWhereCondition {
   value: unknown
   /** Logical operator for combining conditions */
   logical?: 'AND' | 'OR'
+}
+
+/**
+ * Interface for Window Function structure.
+ */
+export interface QueryWindowFunction {
+  /** Function name */
+  function:
+    | 'ROW_NUMBER'
+    | 'RANK'
+    | 'DENSE_RANK'
+    | 'LAG'
+    | 'LEAD'
+    | 'FIRST_VALUE'
+    | 'LAST_VALUE'
+    | 'NTILE'
+    | 'CUME_DIST'
+    | 'PERCENT_RANK'
+    | 'NTH_VALUE'
+  /** Function arguments */
+  args?: string[]
+  /** Window specification */
+  over?: QueryWindowSpec
+}
+
+/**
+ * Interface for Window specification.
+ */
+export interface QueryWindowSpec {
+  /** Partition by columns */
+  partitionBy?: string[]
+  /** Order by clauses */
+  orderBy?: QueryOrderClause[]
+  /** Window frame specification */
+  frame?: {
+    type: 'ROWS' | 'RANGE' | 'GROUPS'
+    start: string | number
+    end?: string | number
+    exclude?: 'CURRENT ROW' | 'GROUP' | 'TIES' | 'NO OTHERS'
+  }
 }

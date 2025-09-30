@@ -6,7 +6,9 @@ import type {
   DatabaseTransaction,
   QueryDelete,
   QueryInsert,
+  QueryMerge,
   QuerySelect,
+  QueryStatement,
   QueryUpdate
 } from '@interfaces/index'
 import { Base } from '@core/dialects/index'
@@ -83,7 +85,7 @@ export class Sqlite extends Base {
    * @param query - SELECT query object
    * @returns Object containing SQL string and parameters
    */
-  buildSelectQuery(query: QuerySelect): { sql: string; params: unknown[] } {
+  buildSelectQuery(query: QuerySelect): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     if (query.ctes !== undefined && query.ctes.length > 0) {
@@ -116,7 +118,7 @@ export class Sqlite extends Base {
    * @param query - INSERT query object
    * @returns Object containing SQL string and parameters
    */
-  buildInsertQuery(query: QueryInsert): { sql: string; params: unknown[] } {
+  buildInsertQuery(query: QueryInsert): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     parts.push('INSERT INTO', this.escapeIdentifier(query.into))
@@ -150,7 +152,7 @@ export class Sqlite extends Base {
    * @param query - UPDATE query object
    * @returns Object containing SQL string and parameters
    */
-  buildUpdateQuery(query: QueryUpdate): { sql: string; params: unknown[] } {
+  buildUpdateQuery(query: QueryUpdate): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     parts.push('UPDATE', this.escapeIdentifier(query.table))
@@ -176,7 +178,7 @@ export class Sqlite extends Base {
    * @param query - DELETE query object
    * @returns Object containing SQL string and parameters
    */
-  buildDeleteQuery(query: QueryDelete): { sql: string; params: unknown[] } {
+  buildDeleteQuery(query: QueryDelete): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     parts.push('DELETE FROM', this.escapeIdentifier(query.from))
@@ -248,6 +250,19 @@ export class Sqlite extends Base {
       return `LIMIT ${limit}`
     }
     return `LIMIT ${limit} OFFSET ${offset}`
+  }
+
+  /**
+   * Builds a MERGE query for SQLite (not supported, throws error).
+   * @param _query - MERGE query object (unused)
+   * @returns Object containing SQL string and parameters
+   * @throws {Error} MERGE is not supported in SQLite
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildMergeQuery(_query: QueryMerge): QueryStatement {
+    throw new Error(
+      'MERGE queries are not supported in SQLite. Use INSERT ... ON CONFLICT instead.'
+    )
   }
 
   /**

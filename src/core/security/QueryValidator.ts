@@ -3,6 +3,7 @@ import type {
   QueryInsert,
   QueryUpdate,
   QueryDelete,
+  QueryMerge,
   QueryWhereCondition,
   QueryJoinClause
 } from '@interfaces/index'
@@ -33,8 +34,8 @@ export class QueryValidator {
         if (typeof col !== 'string') {
           throw new Error(errorMessages.WHERE.COLUMN_NAMES_MUST_BE_STRINGS)
         }
-        if (col === '*') {
-          // Allow wildcard column
+        if (col === '*' || col.endsWith('.*')) {
+          // Allow wildcard column or table.* format
         } else if (col.includes(' as ')) {
           const [columnPart, aliasPart]: string[] = col.split(' as ')
           if (columnPart != null && aliasPart != null) {
@@ -81,6 +82,20 @@ export class QueryValidator {
       query.returning.forEach((col: string) => {
         SqlSanitizer.sanitizeIdentifier(col)
       })
+    }
+    if (query.conflict != null) {
+      if (query.conflict.target.length === 0) {
+        throw new Error(errorMessages.QUERY.CONFLICT_EMPTY_TARGET)
+      }
+      query.conflict.target.forEach((col: string) => {
+        SqlSanitizer.sanitizeIdentifier(col)
+      })
+      if (query.conflict.action === 'DO_UPDATE' && query.conflict.update == null) {
+        throw new Error(errorMessages.QUERY.CONFLICT_UPDATE_REQUIRED)
+      }
+      if (query.conflict.where != null) {
+        this.validateWhereConditions(query.conflict.where)
+      }
     }
     return true
   }
@@ -180,6 +195,7 @@ export class QueryValidator {
       }
       if (
         join.type !== 'CROSS' &&
+        join.type !== 'LATERAL' &&
         (join.on == null || !Array.isArray(join.on) || join.on.length === 0)
       ) {
         throw new Error(errorMessages.JOIN.MISSING_ON_CONDITIONS)
@@ -188,5 +204,37 @@ export class QueryValidator {
         this.validateWhereConditions(join.on)
       }
     })
+  }
+
+  /**
+   * Validates MERGE query structure and parameters.
+   * @param query - The MERGE query object to validate
+   * @returns True if validation passes
+   * @throws {Error} When query structure is invalid
+   */
+  static validateMergeQuery(query: QueryMerge): boolean {
+    if (!query.into) {
+      throw new Error(errorMessages.QUERY.MERGE_MISSING_INTO)
+    }
+    SqlSanitizer.sanitizeIdentifier(query.into)
+    if (query.using == null) {
+      throw new Error(errorMessages.QUERY.MERGE_MISSING_USING)
+    }
+    if (typeof query.using === 'string') {
+      SqlSanitizer.sanitizeIdentifier(query.using)
+    }
+    if (query.on == null || query.on.length === 0) {
+      throw new Error(errorMessages.QUERY.MERGE_MISSING_ON)
+    }
+    this.validateWhereConditions(query.on)
+    if (!query.whenMatched && !query.whenNotMatched) {
+      throw new Error(errorMessages.QUERY.MERGE_MISSING_WHEN)
+    }
+    if (query.returning != null) {
+      query.returning.forEach((col: string) => {
+        SqlSanitizer.sanitizeIdentifier(col)
+      })
+    }
+    return true
   }
 }
