@@ -1,6 +1,6 @@
 import type { DatabaseConfig, ConnectionBase } from '@interfaces/index'
 import { Base, Postgres, MySql, Sqlite } from '@core/dialects/index'
-import { getInvalidDatabaseTypeError } from '@constants/ErrorMap'
+import { getInvalidDatabaseTypeError } from '@constants/index'
 
 /**
  * Database connection manager with connection pooling.

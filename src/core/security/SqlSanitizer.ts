@@ -2,7 +2,7 @@ import {
   errorMessages,
   getInvalidIdentifierError,
   getInvalidFunctionParameterError
-} from '@constants/ErrorMap'
+} from '@constants/index'
 
 /**
  * SQL sanitization utilities for preventing injection attacks.

@@ -4,7 +4,7 @@ import {
   typeMappers,
   type DatabaseType
 } from '@core/dialects/builders/DataType'
-import { getInvalidDatabaseError } from '@constants/ErrorMap'
+import { getInvalidDatabaseError } from '@constants/index'
 
 /**
  * Dialect factory utilities.

@@ -463,8 +463,6 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     return this
   }
 
-  // ===== SET OPERATIONS =====
-
   /**
    * Adds an INTERSECT clause to the query.
    * @param query - Query to intersect with

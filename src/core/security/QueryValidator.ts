@@ -12,7 +12,7 @@ import {
   getInvalidColumnAliasError,
   getInvalidColumnAliasFormatError,
   getInvalidColumnNameError
-} from '@constants/ErrorMap'
+} from '@constants/index'
 
 /**
  * Validates query structure and parameters for security and correctness.
@@ -140,14 +140,12 @@ export class QueryValidator {
    */
   private static validateWhereConditions(conditions: QueryWhereCondition[]): void {
     conditions.forEach((condition: QueryWhereCondition) => {
-      // Skip validation for RAW SQL conditions
       if (condition.operator === 'RAW') {
         if (condition.column == null || typeof condition.column !== 'string') {
           throw new Error(errorMessages.WHERE.INVALID_RAW_CONDITION)
         }
         return
       }
-
       if (condition.column == null || typeof condition.column !== 'string') {
         throw new Error(errorMessages.WHERE.INVALID_COLUMN_NAME)
       }

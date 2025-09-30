@@ -1,6 +1,6 @@
 import type { QuerySelect, QueryWhereCondition, QueryComparisonOperator } from '@interfaces/index'
-import { getInvalidOperatorError } from '@constants/ErrorMap'
 import { WhereClauseHelper } from '@builders/helpers/index'
+import { getInvalidOperatorError } from '@constants/index'
 
 /**
  * Helper class for WHERE clause operations.

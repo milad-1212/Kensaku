@@ -1,4 +1,4 @@
-import { getInvalidDatabaseTypeError } from '@constants/ErrorMap'
+import { getInvalidDatabaseTypeError } from '@constants/index'
 
 /**
  * Supported database types.
