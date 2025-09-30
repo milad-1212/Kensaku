@@ -1,6 +1,6 @@
-import type { QueryBuilder } from '@interfaces/index'
+import type { QueryBuilder, DatabaseType } from '@interfaces/index'
 import { Connection as ConnectionManager } from '@core/index'
-import { SqlSanitizer } from '@core/security/index'
+import { SqlEscapeHelper } from '@builders/helpers/index'
 
 /**
  * Abstract base class for all query builders.
@@ -73,8 +73,26 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
    * @returns Parameter placeholder string
    */
   protected addParam(value: unknown): string {
-    this.params.push(SqlSanitizer.sanitizeValue(value))
-    return `$${this.params.length}`
+    return SqlEscapeHelper.addParam(value, this.params)
+  }
+
+  /**
+   * Adds a database-specific sanitized parameter to the query.
+   * @param value - Parameter value to add
+   * @param databaseType - Target database type for sanitization
+   * @returns Parameter placeholder string
+   */
+  protected addDatabaseParam(value: unknown, databaseType: DatabaseType): string {
+    return SqlEscapeHelper.addDatabaseParam(value, this.params, databaseType)
+  }
+
+  /**
+   * Builds a parameterized query with enhanced sanitization.
+   * @param sql - The SQL query string
+   * @returns Object containing SQL and sanitized parameters
+   */
+  protected buildParameterizedQuery(sql: string): { sql: string; params: unknown[] } {
+    return SqlEscapeHelper.buildParameterizedQuery(sql, this.params)
   }
 
   /**
@@ -83,6 +101,33 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
    * @returns Escaped identifier string
    */
   protected escapeIdentifier(identifier: string): string {
-    return SqlSanitizer.sanitizeIdentifier(identifier)
+    return SqlEscapeHelper.escapeIdentifier(identifier)
+  }
+
+  /**
+   * Escapes a column expression for SQL (handles aliases and functions).
+   * @param expression - Column expression to escape
+   * @returns Escaped column expression
+   */
+  protected escapeColumnExpression(expression: string): string {
+    return SqlEscapeHelper.escapeColumnExpression(expression)
+  }
+
+  /**
+   * Escapes multiple identifiers and joins them with commas.
+   * @param identifiers - Array of identifiers to escape
+   * @returns Comma-separated escaped identifiers
+   */
+  protected escapeIdentifierList(identifiers: string[]): string {
+    return SqlEscapeHelper.escapeIdentifierList(identifiers)
+  }
+
+  /**
+   * Escapes multiple column expressions and joins them with commas.
+   * @param expressions - Array of column expressions to escape
+   * @returns Comma-separated escaped column expressions
+   */
+  protected escapeColumnExpressionList(expressions: string[]): string {
+    return SqlEscapeHelper.escapeColumnExpressionList(expressions)
   }
 }

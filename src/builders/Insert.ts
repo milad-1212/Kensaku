@@ -1,7 +1,8 @@
 import type { QueryInsert } from '@interfaces/index'
+import { ReturningClauseHelper } from '@builders/helpers/index'
+import { InsertMixin } from '@builders/mixins/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
-import { ReturningClauseHelpers } from '@builders/helpers/index'
 
 /**
  * Query builder for INSERT operations with fluent interface.
@@ -18,7 +19,7 @@ export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   into(table: string): this {
-    this.query.into = table
+    InsertMixin.setIntoTable(this.query, table)
     return this
   }
 
@@ -28,7 +29,7 @@ export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   values(data: Record<string, unknown> | Record<string, unknown>[]): this {
-    this.query.values = data
+    InsertMixin.setValues(this.query, data)
     return this
   }
 
@@ -38,7 +39,7 @@ export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   returning(columns: string | string[]): this {
-    ReturningClauseHelpers.setReturningColumns(this.query, columns)
+    ReturningClauseHelper.setReturningColumns(this.query, columns)
     return this
   }
 
@@ -51,27 +52,17 @@ export class InsertBuilder<T = unknown> extends BaseQueryBuilder<T> {
     QueryValidator.validateInsertQuery(this.query)
     const parts: string[] = []
     this.params = []
-    parts.push('INSERT INTO', this.escapeIdentifier(this.query.into))
-    if (Array.isArray(this.query.values) && this.query.values.length > 0) {
-      const columns: string[] = Object.keys(this.query.values[0] as Record<string, unknown>)
-      const columnList: string = columns.map((col: string) => this.escapeIdentifier(col)).join(', ')
-      parts.push(`(${columnList})`)
-      const valueRows: string[] = this.query.values.map((row: Record<string, unknown>) => {
-        const values: string = columns.map((col: string) => this.addParam(row[col])).join(', ')
-        return `(${values})`
-      })
-      parts.push('VALUES', valueRows.join(', '))
-    } else if (this.query.values != null && !Array.isArray(this.query.values)) {
-      const columns: string[] = Object.keys(this.query.values)
-      const columnList: string = columns.map((col: string) => this.escapeIdentifier(col)).join(', ')
-      const values: string = columns
-        .map((col: string) => this.addParam((this.query.values as Record<string, unknown>)[col]))
-        .join(', ')
-      parts.push(`(${columnList})`, 'VALUES', `(${values})`)
-    }
+    parts.push(InsertMixin.buildInsertClause(this.query, this.escapeIdentifier.bind(this)))
+    parts.push(
+      InsertMixin.buildValuesClause(
+        this.query,
+        this.escapeIdentifier.bind(this),
+        this.addParam.bind(this)
+      )
+    )
     if (this.query.returning !== undefined && this.query.returning.length > 0) {
       parts.push(
-        ReturningClauseHelpers.buildReturningClause(
+        ReturningClauseHelper.buildReturningClause(
           this.query.returning,
           this.escapeIdentifier.bind(this)
         )

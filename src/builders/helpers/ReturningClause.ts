@@ -2,7 +2,7 @@
  * Utility class for RETURNING clause operations.
  * @description Provides helper methods for building RETURNING clauses in SQL queries.
  */
-export class ReturningClauseHelpers {
+export class ReturningClauseHelper {
   /**
    * Sets the RETURNING columns for a query.
    * @param query - Query object with returning property

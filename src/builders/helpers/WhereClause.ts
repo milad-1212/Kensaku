@@ -4,7 +4,7 @@ import type { QueryWhereCondition, QueryComparisonOperator } from '@interfaces/i
  * Utility class for WHERE clause operations.
  * @description Provides helper methods for creating WHERE condition objects.
  */
-export class WhereClauseHelpers {
+export class WhereClauseHelper {
   /**
    * Creates a WHERE condition object from the provided parameters.
    * @param columnOrCondition - Column name or condition object
@@ -19,6 +19,13 @@ export class WhereClauseHelpers {
   ): QueryWhereCondition {
     if (typeof columnOrCondition === 'string') {
       if (typeof operatorOrValue === 'string') {
+        if (operatorOrValue === 'BETWEEN' && value !== undefined) {
+          return {
+            column: columnOrCondition,
+            operator: operatorOrValue,
+            value: Array.isArray(value) ? value : [value, value]
+          }
+        }
         return {
           column: columnOrCondition,
           operator: operatorOrValue,

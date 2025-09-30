@@ -1,9 +1,6 @@
 import type { QueryDelete, QueryWhereCondition, QueryComparisonOperator } from '@interfaces/index'
-import {
-  ReturningClauseHelpers,
-  WhereConditionHelpers,
-  WhereClauseHelpers
-} from '@builders/helpers/index'
+import { ReturningClauseHelper, WhereConditionHelper } from '@builders/helpers/index'
+import { DeleteMixin, WhereMixin } from '@builders/mixins/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
 
@@ -22,7 +19,7 @@ export class DeleteBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   from(table: string): this {
-    this.query.from = table
+    DeleteMixin.setDeleteFrom(this.query, table)
     return this
   }
 
@@ -52,10 +49,7 @@ export class DeleteBuilder<T = unknown> extends BaseQueryBuilder<T> {
     operatorOrValue?: QueryComparisonOperator,
     value?: unknown
   ): this {
-    this.query.where ??= []
-    this.query.where.push(
-      WhereClauseHelpers.createWhereCondition(columnOrCondition, operatorOrValue, value)
-    )
+    WhereMixin.addWhereCondition(this.query, columnOrCondition, operatorOrValue, value)
     return this
   }
 
@@ -85,10 +79,7 @@ export class DeleteBuilder<T = unknown> extends BaseQueryBuilder<T> {
     operatorOrValue?: QueryComparisonOperator,
     value?: unknown
   ): this {
-    this.query.where ??= []
-    this.query.where.push(
-      WhereClauseHelpers.createAndWhereCondition(columnOrCondition, operatorOrValue, value)
-    )
+    WhereMixin.addAndWhereCondition(this.query, columnOrCondition, operatorOrValue, value)
     return this
   }
 
@@ -118,10 +109,7 @@ export class DeleteBuilder<T = unknown> extends BaseQueryBuilder<T> {
     operatorOrValue?: QueryComparisonOperator,
     value?: unknown
   ): this {
-    this.query.where ??= []
-    this.query.where.push(
-      WhereClauseHelpers.createOrWhereCondition(columnOrCondition, operatorOrValue, value)
-    )
+    WhereMixin.addOrWhereCondition(this.query, columnOrCondition, operatorOrValue, value)
     return this
   }
 
@@ -131,7 +119,7 @@ export class DeleteBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   returning(columns: string | string[]): this {
-    ReturningClauseHelpers.setReturningColumns(this.query, columns)
+    ReturningClauseHelper.setReturningColumns(this.query, columns)
     return this
   }
 
@@ -144,11 +132,11 @@ export class DeleteBuilder<T = unknown> extends BaseQueryBuilder<T> {
     QueryValidator.validateDeleteQuery(this.query)
     const parts: string[] = []
     this.params = []
-    parts.push('DELETE FROM', this.escapeIdentifier(this.query.from))
+    parts.push(DeleteMixin.buildDeleteClause(this.query, this.escapeIdentifier.bind(this)))
     if (this.query.where && this.query.where.length > 0) {
       parts.push(
         'WHERE',
-        WhereConditionHelpers.buildWhereConditions(
+        WhereConditionHelper.buildWhereConditions(
           this.query.where,
           this.escapeIdentifier.bind(this),
           this.addParam.bind(this)
@@ -157,7 +145,7 @@ export class DeleteBuilder<T = unknown> extends BaseQueryBuilder<T> {
     }
     if (this.query.returning && this.query.returning.length > 0) {
       parts.push(
-        ReturningClauseHelpers.buildReturningClause(
+        ReturningClauseHelper.buildReturningClause(
           this.query.returning,
           this.escapeIdentifier.bind(this)
         )

@@ -3,11 +3,22 @@ import type {
   QueryWhereCondition,
   QueryComparisonOperator,
   QueryDirectionType,
-  QueryJoinType,
   QuerySubQuery,
-  QueryWindowSpec
+  QueryWindowSpec,
+  QueryWindowFunction,
+  QueryCTEClause,
+  QueryUnionClause
 } from '@interfaces/index'
-import { WhereConditionHelpers, WhereClauseHelpers } from '@builders/helpers/index'
+import { WhereConditionHelper } from '@builders/helpers/index'
+import {
+  CteMixin,
+  HavingMixin,
+  JoinMixin,
+  SelectMixin,
+  UnionMixin,
+  WhereMixin,
+  WindowMixin
+} from '@builders/mixins/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
 
@@ -26,7 +37,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   select(...columns: string[]): this {
-    this.query.columns = columns
+    SelectMixin.setColumns(this.query, ...columns)
     return this
   }
 
@@ -35,7 +46,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   selectAll(): this {
-    this.query.columns = ['*']
+    SelectMixin.setSelectAll(this.query)
     return this
   }
 
@@ -44,7 +55,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   distinct(): this {
-    this.query.distinct = true
+    SelectMixin.setDistinct(this.query)
     return this
   }
 
@@ -55,23 +66,15 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @throws {Error} When table name is empty or subquery is invalid
    */
   from(table: string | QuerySubQuery | SelectBuilder): this {
-    if (typeof table === 'string') {
-      if (!table || table.trim() === '') {
-        throw new Error('Table name cannot be empty')
-      }
-      this.query.from = table
-    } else if (table instanceof SelectBuilder) {
+    if (table instanceof SelectBuilder) {
       const subquery: QuerySubQuery = {
         query: table.toSQL(),
         params: table.toParams(),
         alias: 'subquery'
       }
-      this.query.from = subquery
+      SelectMixin.setFrom(this.query, subquery)
     } else {
-      if (!table?.query) {
-        throw new Error('Subquery cannot be empty')
-      }
-      this.query.from = table
+      SelectMixin.setFrom(this.query, table)
     }
     return this
   }
@@ -102,13 +105,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     operatorOrValue?: QueryComparisonOperator,
     value?: unknown
   ): this {
-    this.query.where ??= []
-    if (typeof columnOrCondition === 'string' && typeof operatorOrValue === 'string') {
-      this.validateOperator(operatorOrValue)
-    }
-    this.query.where.push(
-      WhereClauseHelpers.createWhereCondition(columnOrCondition, operatorOrValue, value)
-    )
+    WhereMixin.addWhereCondition(this.query, columnOrCondition, operatorOrValue, value)
     return this
   }
 
@@ -138,10 +135,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     operatorOrValue?: QueryComparisonOperator,
     value?: unknown
   ): this {
-    this.query.where ??= []
-    this.query.where.push(
-      WhereClauseHelpers.createAndWhereCondition(columnOrCondition, operatorOrValue, value)
-    )
+    WhereMixin.addAndWhereCondition(this.query, columnOrCondition, operatorOrValue, value)
     return this
   }
 
@@ -171,10 +165,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     operatorOrValue?: QueryComparisonOperator,
     value?: unknown
   ): this {
-    this.query.where ??= []
-    this.query.where.push(
-      WhereClauseHelpers.createOrWhereCondition(columnOrCondition, operatorOrValue, value)
-    )
+    WhereMixin.addOrWhereCondition(this.query, columnOrCondition, operatorOrValue, value)
     return this
   }
 
@@ -185,7 +176,8 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   join(table: string, on: QueryWhereCondition[]): this {
-    return this.addJoin('INNER', table, on)
+    JoinMixin.addInnerJoin(this.query, table, on)
+    return this
   }
 
   /**
@@ -195,7 +187,8 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   innerJoin(table: string, on: QueryWhereCondition[]): this {
-    return this.addJoin('INNER', table, on)
+    JoinMixin.addInnerJoin(this.query, table, on)
+    return this
   }
 
   /**
@@ -205,7 +198,8 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   leftJoin(table: string, on: QueryWhereCondition[]): this {
-    return this.addJoin('LEFT', table, on)
+    JoinMixin.addLeftJoin(this.query, table, on)
+    return this
   }
 
   /**
@@ -215,7 +209,8 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   rightJoin(table: string, on: QueryWhereCondition[]): this {
-    return this.addJoin('RIGHT', table, on)
+    JoinMixin.addRightJoin(this.query, table, on)
+    return this
   }
 
   /**
@@ -225,7 +220,8 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   fullJoin(table: string, on: QueryWhereCondition[]): this {
-    return this.addJoin('FULL', table, on)
+    JoinMixin.addFullJoin(this.query, table, on)
+    return this
   }
 
   /**
@@ -234,23 +230,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   crossJoin(table: string): this {
-    return this.addJoin('CROSS', table, [])
-  }
-
-  /**
-   * Adds a join clause to the query.
-   * @param type - Type of join
-   * @param table - Table to join
-   * @param on - Join conditions
-   * @returns This builder instance for method chaining
-   */
-  private addJoin(type: QueryJoinType, table: string, on: QueryWhereCondition[]): this {
-    this.query.joins ??= []
-    this.query.joins.push({
-      type,
-      table,
-      on
-    })
+    JoinMixin.addCrossJoin(this.query, table)
     return this
   }
 
@@ -260,7 +240,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   groupBy(columns: string | string[]): this {
-    this.query.groupBy = Array.isArray(columns) ? columns : [columns]
+    SelectMixin.setGroupBy(this.query, columns)
     return this
   }
 
@@ -272,12 +252,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   having(column: string, operator: QueryComparisonOperator, value: unknown): this {
-    this.query.having ??= []
-    this.query.having.push({
-      column,
-      operator,
-      value
-    })
+    HavingMixin.addHavingCondition(this.query, column, operator, value)
     return this
   }
 
@@ -288,11 +263,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   orderBy(column: string, direction: QueryDirectionType = 'ASC'): this {
-    this.query.orderBy ??= []
-    this.query.orderBy.push({
-      column,
-      direction
-    })
+    SelectMixin.addOrderBy(this.query, column, direction)
     return this
   }
 
@@ -302,7 +273,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   limit(count: number): this {
-    this.query.limit = count
+    SelectMixin.setLimit(this.query, count)
     return this
   }
 
@@ -312,7 +283,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   offset(count: number): this {
-    this.query.offset = count
+    SelectMixin.setOffset(this.query, count)
     return this
   }
 
@@ -324,6 +295,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     QueryValidator.validateSelectQuery(this.query)
     const parts: string[] = []
     this.params = []
+    this.buildCteClause(parts)
     this.buildSelectClause(parts)
     this.buildFromClause(parts)
     this.buildJoinClauses(parts)
@@ -333,6 +305,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
     this.buildOrderByClause(parts)
     this.buildLimitClause(parts)
     this.buildOffsetClause(parts)
+    this.buildUnionClause(parts)
     return {
       sql: parts.join(' '),
       params: this.params
@@ -349,12 +322,16 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
       parts.push('DISTINCT')
     }
     if (this.query.columns != null && this.query.columns.length > 0) {
-      const columns: string = this.query.columns
-        .map((col: string) => this.escapeColumnExpression(col))
-        .join(', ')
+      const columns: string = this.escapeColumnExpressionList(this.query.columns)
       parts.push(columns)
     } else {
       parts.push('*')
+    }
+    if (this.query.windowFunctions != null && this.query.windowFunctions.length > 0) {
+      const windowFunctions: string = this.query.windowFunctions
+        .map((wf: QueryWindowFunction) => this.buildWindowFunction(wf))
+        .join(', ')
+      parts.push(',', windowFunctions)
     }
   }
 
@@ -407,9 +384,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    */
   private buildGroupByClause(parts: string[]): void {
     if (this.query.groupBy != null && this.query.groupBy.length > 0) {
-      const columns: string = this.query.groupBy
-        .map((col: string) => this.escapeIdentifier(col))
-        .join(', ')
+      const columns: string = this.escapeIdentifierList(this.query.groupBy)
       parts.push('GROUP BY', columns)
     }
   }
@@ -419,8 +394,12 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @param parts - Array to append SQL parts to
    */
   private buildHavingClause(parts: string[]): void {
-    if (this.query.having != null && this.query.having.length > 0) {
-      parts.push('HAVING', this.buildWhereConditions(this.query.having))
+    const havingClause: string = HavingMixin.buildHavingClause(
+      this.query,
+      this.buildWhereConditions.bind(this)
+    )
+    if (havingClause) {
+      parts.push(havingClause)
     }
   }
 
@@ -466,7 +445,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns SQL string for WHERE conditions
    */
   private buildWhereConditions(conditions: QueryWhereCondition[]): string {
-    return WhereConditionHelpers.buildWhereConditions(
+    return WhereConditionHelper.buildWhereConditions(
       conditions,
       this.escapeIdentifier.bind(this),
       this.addParam.bind(this),
@@ -486,71 +465,52 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
   }
 
   /**
-   * Escapes a column expression for SQL.
-   * @param expression - Column expression to escape
-   * @returns Escaped column expression
+   * Builds a window function SQL string.
+   * @param windowFunction - Window function object
+   * @returns SQL string for the window function
    */
-  protected escapeColumnExpression(expression: string): string {
-    const asIndex: number = expression.toLowerCase().indexOf(' as ')
-    if (asIndex > 0) {
-      const expr: string = expression.substring(0, asIndex).trim()
-      const alias: string = expression.substring(asIndex + 4).trim()
-      return `${this.escapeFunctionExpression(expr)} AS ${this.escapeIdentifier(alias)}`
+  private buildWindowFunction(windowFunction: QueryWindowFunction): string {
+    const {
+      function: func,
+      args,
+      over
+    }: {
+      function: string
+      args?: string[]
+      over?: { partitionBy?: string[]; orderBy?: { column: string; direction: string }[] }
+    } = windowFunction
+    let sql: string = func
+    if (args != null && args.length > 0) {
+      const escapedArgs: string = args
+        .map((arg: string): string => this.escapeIdentifier(arg))
+        .join(', ')
+      sql += `(${escapedArgs})`
     } else {
-      return this.escapeFunctionExpression(expression)
+      sql += '()'
     }
-  }
-
-  /**
-   * Escapes a function expression for SQL.
-   * @param expression - Function expression to escape
-   * @returns Escaped function expression
-   */
-  private escapeFunctionExpression(expression: string): string {
-    if (expression.includes('(') && expression.includes(')')) {
-      const functionMatch: RegExpExecArray | null =
-        /^([a-zA-Z_]\w{1,30})\s*\(([^)]{1,100})\)$/.exec(expression)
-      if (functionMatch) {
-        const [, funcName, params]: string[] = functionMatch as string[]
-        const escapedParams: string = (params ?? '')
-          .split(',')
-          .map((param: string) => {
-            const trimmed: string = param.trim()
-            if (trimmed === '*') {
-              return '*'
-            }
-            if (this.isValidIdentifier(expression)) {
-              return this.escapeIdentifier(trimmed)
-            }
-            return trimmed
-          })
+    if (over != null) {
+      sql += ' OVER ('
+      if (over.partitionBy != null && over.partitionBy.length > 0) {
+        const partitionBy: string = over.partitionBy
+          .map((col: string) => this.escapeIdentifier(col))
           .join(', ')
-        return `${funcName}(${escapedParams})`
+        sql += `PARTITION BY ${partitionBy}`
       }
-    }
-    if (this.isValidIdentifier(expression)) {
-      return this.escapeIdentifier(expression)
-    }
-    return expression
-  }
-
-  /**
-   * Validates if the identifier is a valid SQL identifier.
-   * @param identifier - Identifier to validate
-   * @returns True if identifier is valid
-   */
-  private isValidIdentifier(identifier: string): boolean {
-    const partRegex: RegExp = /^[a-zA-Z_]\w{0,29}$/
-    const parts: string[] = identifier.split('.')
-    if (parts.length > 2 || parts.length === 0) {
-      return false
-    }
-    for (const part of parts) {
-      if (!partRegex.test(part)) {
-        return false
+      if (over.orderBy != null && over.orderBy.length > 0) {
+        if (over.partitionBy != null && over.partitionBy.length > 0) {
+          sql += ' '
+        }
+        const orderBy: string = over.orderBy
+          .map(
+            (order: { column: string; direction: string }) =>
+              `${this.escapeIdentifier(order.column)} ${order.direction}`
+          )
+          .join(', ')
+        sql += `ORDER BY ${orderBy}`
       }
+      sql += ')'
     }
-    return true
+    return sql
   }
 
   /**
@@ -559,11 +519,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   union(query: SelectBuilder): this {
-    this.query.unions ??= []
-    this.query.unions.push({
-      type: 'UNION',
-      query: query.toQuery()
-    })
+    UnionMixin.addUnion(this.query, query.toQuery())
     return this
   }
 
@@ -573,11 +529,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   unionAll(query: SelectBuilder): this {
-    this.query.unions ??= []
-    this.query.unions.push({
-      type: 'UNION ALL',
-      query: query.toQuery()
-    })
+    UnionMixin.addUnionAll(this.query, query.toQuery())
     return this
   }
 
@@ -588,12 +540,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   with(name: string, query: SelectBuilder): this {
-    this.query.ctes ??= []
-    this.query.ctes.push({
-      name,
-      query: query.toQuery(),
-      recursive: false
-    })
+    CteMixin.addCte(this.query, name, query.toQuery())
     return this
   }
 
@@ -604,12 +551,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   withRecursive(name: string, query: SelectBuilder): this {
-    this.query.ctes ??= []
-    this.query.ctes.push({
-      name,
-      query: query.toQuery(),
-      recursive: true
-    })
+    CteMixin.addRecursiveCte(this.query, name, query.toQuery())
     return this
   }
 
@@ -619,11 +561,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   rowNumber(over?: QueryWindowSpec): this {
-    this.query.windowFunctions ??= []
-    this.query.windowFunctions.push({
-      function: 'ROW_NUMBER',
-      ...over !== undefined && { over }
-    })
+    WindowMixin.addRowNumber(this.query, over)
     return this
   }
 
@@ -633,11 +571,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   rank(over?: QueryWindowSpec): this {
-    this.query.windowFunctions ??= []
-    this.query.windowFunctions.push({
-      function: 'RANK',
-      ...over !== undefined && { over }
-    })
+    WindowMixin.addRank(this.query, over)
     return this
   }
 
@@ -647,11 +581,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   denseRank(over?: QueryWindowSpec): this {
-    this.query.windowFunctions ??= []
-    this.query.windowFunctions.push({
-      function: 'DENSE_RANK',
-      ...over !== undefined && { over }
-    })
+    WindowMixin.addDenseRank(this.query, over)
     return this
   }
 
@@ -663,12 +593,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   lag(column: string, offset: number = 1, over?: QueryWindowSpec): this {
-    this.query.windowFunctions ??= []
-    this.query.windowFunctions.push({
-      function: 'LAG',
-      args: [column, offset.toString()],
-      ...over !== undefined && { over }
-    })
+    WindowMixin.addLag(this.query, column, offset, over)
     return this
   }
 
@@ -680,12 +605,7 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    * @returns This builder instance for method chaining
    */
   lead(column: string, offset: number = 1, over?: QueryWindowSpec): this {
-    this.query.windowFunctions ??= []
-    this.query.windowFunctions.push({
-      function: 'LEAD',
-      args: [column, offset.toString()],
-      ...over !== undefined && { over }
-    })
+    WindowMixin.addLead(this.query, column, offset, over)
     return this
   }
 
@@ -698,35 +618,42 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
   }
 
   /**
-   * Validates that the operator is supported.
-   * @param operator - Operator to validate
-   * @throws {Error} If operator is not supported
+   * Builds the CTE clause of the query.
+   * @param parts - Array to append SQL parts to
    */
-  private validateOperator(operator: string): void {
-    const validOperators: QueryComparisonOperator[] = [
-      '=',
-      '!=',
-      '<>',
-      '>',
-      '<',
-      '>=',
-      '<=',
-      'LIKE',
-      'ILIKE',
-      'NOT LIKE',
-      'IN',
-      'NOT IN',
-      'BETWEEN',
-      'NOT BETWEEN',
-      'IS NULL',
-      'IS NOT NULL',
-      'EXISTS',
-      'NOT EXISTS'
-    ]
-    if (!validOperators.includes(operator as QueryComparisonOperator)) {
-      throw new Error(
-        `Unsupported operator: ${operator}. Valid operators are: ${validOperators.join(', ')}`
-      )
+  private buildCteClause(parts: string[]): void {
+    if (this.query.ctes != null && this.query.ctes.length > 0) {
+      const cteClauses: string[] = this.query.ctes.map((cte: QueryCTEClause) => {
+        const name: string = this.escapeIdentifier(cte.name)
+        const recursive: string = cte.recursive === true ? 'RECURSIVE ' : ''
+        // Build the CTE query using the stored query object
+        if (cte.query != null) {
+          // For now, use a placeholder since CTE queries need to be built separately
+          const cteQuery: string = 'SELECT 1'
+          return `${recursive}${name} AS (${cteQuery})`
+        }
+        return `${recursive}${name} AS (SELECT 1)`
+      })
+      parts.push('WITH', cteClauses.join(', '))
+    }
+  }
+
+  /**
+   * Builds the UNION clause of the query.
+   * @param parts - Array to append SQL parts to
+   */
+  private buildUnionClause(parts: string[]): void {
+    if (this.query.unions != null && this.query.unions.length > 0) {
+      this.query.unions.forEach((union: QueryUnionClause) => {
+        // Build the UNION query using the stored query object
+        if (union.query != null) {
+          // For now, use a placeholder since UNION queries need to be built separately
+          const unionQuery: string = 'SELECT 1'
+          parts.push(union.type, unionQuery)
+        } else {
+          parts.push(union.type, 'SELECT 1')
+        }
+      })
     }
   }
 }

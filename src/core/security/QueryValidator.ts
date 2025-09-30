@@ -28,8 +28,24 @@ export class QueryValidator {
         if (typeof col !== 'string') {
           throw new Error('Column names must be strings')
         }
-        if (/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(col)) {
+        if (col === '*') {
+          // Allow wildcard column
+        } else if (col.includes(' as ')) {
+          const [columnPart, aliasPart]: string[] = col.split(' as ')
+          if (columnPart != null && aliasPart != null) {
+            const cleanAlias: string = aliasPart.trim()
+            if (SqlSanitizer.validateIdentifier(cleanAlias)) {
+              SqlSanitizer.sanitizeIdentifier(cleanAlias)
+            } else {
+              throw new Error(`Invalid column alias: ${cleanAlias}`)
+            }
+          } else {
+            throw new Error(`Invalid column alias format: ${col}`)
+          }
+        } else if (SqlSanitizer.validateIdentifier(col)) {
           SqlSanitizer.sanitizeIdentifier(col)
+        } else {
+          throw new Error(`Invalid column name: ${col}`)
         }
       })
     }
@@ -100,9 +116,10 @@ export class QueryValidator {
       throw new Error('DELETE query must have a FROM clause')
     }
     SqlSanitizer.sanitizeIdentifier(query.from)
-    if (query.where != null) {
-      this.validateWhereConditions(query.where)
+    if (query.where == null || query.where.length === 0) {
+      throw new Error('DELETE query must have a WHERE clause for safety')
     }
+    this.validateWhereConditions(query.where)
     if (query.returning != null) {
       query.returning.forEach((col: string) => {
         SqlSanitizer.sanitizeIdentifier(col)
@@ -130,6 +147,9 @@ export class QueryValidator {
         !['IS NULL', 'IS NOT NULL'].includes(condition.operator)
       ) {
         throw new Error('WHERE condition must have a value')
+      }
+      if (condition.value === '' && condition.operator === '=') {
+        return
       }
     })
   }

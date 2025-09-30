@@ -25,7 +25,11 @@ export class SqlSanitizer {
             if (trimmed === '*') {
               return '*'
             }
-            if (this.isValidIdentifier(trimmed)) {
+            if (
+              this.isValidIdentifier(trimmed) ||
+              this.isComplexExpression(trimmed) ||
+              this.isComplexParameter(trimmed)
+            ) {
               return trimmed
             }
             throw new Error(`Invalid function parameter: ${trimmed}`)
@@ -34,11 +38,35 @@ export class SqlSanitizer {
         return `${funcName}(${sanitizedParams})`
       }
     }
+    if (this.isComplexExpression(identifier)) {
+      return identifier
+    }
     const sanitized: string = identifier.replace(/[^a-zA-Z0-9_.() ]/g, '')
     if (sanitized !== identifier) {
       throw new Error(`Invalid identifier: ${identifier}`)
     }
     return sanitized
+  }
+
+  /**
+   * Checks if a string is a complex SQL expression.
+   * @param expression - The expression to check
+   * @returns True if it's a complex expression
+   */
+  private static isComplexExpression(expression: string): boolean {
+    const complexPatterns: RegExp[] = [
+      /^EXTRACT\([^)]+\)$/i,
+      /^DATE\([^)]+\)$/i,
+      /^COUNT\([^)]*\)$/i,
+      /^AVG\([^)]+\)$/i,
+      /^SUM\([^)]+\)$/i,
+      /^MAX\([^)]+\)$/i,
+      /^MIN\([^)]+\)$/i,
+      /^CASE\s+WHEN.*END$/i,
+      /^[A-Z_]+\([^)]+\)$/i,
+      /^[A-Z_]+\s+FROM\s+[A-Z_]+$/i
+    ]
+    return complexPatterns.some((pattern: RegExp) => pattern.test(expression))
   }
 
   /**
@@ -198,5 +226,18 @@ export class SqlSanitizer {
       }
     }
     return this.isValidIdentifier(identifier)
+  }
+
+  /**
+   * Checks if a string is a complex SQL parameter.
+   * @param parameter - The parameter to check
+   * @returns True if it's a complex parameter
+   */
+  private static isComplexParameter(parameter: string): boolean {
+    const complexParamPatterns: RegExp[] = [
+      /^[A-Z_]+\s+FROM\s+[a-z]\w*$/i,
+      /^[A-Z_]+\s+FROM\s+[a-z]\w*\.[a-z]\w*$/i
+    ]
+    return complexParamPatterns.some((pattern: RegExp) => pattern.test(parameter))
   }
 }

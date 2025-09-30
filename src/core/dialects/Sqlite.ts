@@ -204,7 +204,7 @@ export class Sqlite extends Base {
       return 'NULL'
     }
     if (typeof value === 'string') {
-      return `'${value.replace(/'/g, "''")}'`
+      return `'${value.replace(/'/g, '\'\'')}'`
     }
     if (typeof value === 'number' || typeof value === 'boolean') {
       return String(value)
@@ -212,7 +212,7 @@ export class Sqlite extends Base {
     if (value instanceof Date) {
       return `'${value.toISOString()}'`
     }
-    return `'${JSON.stringify(value).replace(/'/g, "''")}'`
+    return `'${JSON.stringify(value).replace(/'/g, '\'\'')}'`
   }
 
   /**
