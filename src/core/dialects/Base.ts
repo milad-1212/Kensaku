@@ -96,7 +96,7 @@ export abstract class Base {
    * @param parts - Array to store SQL parts
    * @param params - Array to store query parameters
    */
-  protected buildCTEClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+  public buildCTEClause(query: QuerySelect, parts: string[], params: unknown[]): void {
     const cteParts: string[] = []
     for (const cte of query.ctes ?? []) {
       const cteName: string = this.escapeIdentifier(cte.name)
@@ -118,7 +118,7 @@ export abstract class Base {
    * @param parts - Array to store SQL parts
    * @param params - Array to store query parameters
    */
-  protected buildUnionClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
+  public buildUnionClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
     for (const union of query.unions ?? []) {
       const { sql: unionSql, params: unionParams }: { sql: string; params: unknown[] } =
         this.buildSelectQuery(union.query)

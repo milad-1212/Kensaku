@@ -58,6 +58,14 @@ export class Connection {
   }
 
   /**
+   * Gets the database dialect instance.
+   * @returns Database dialect instance
+   */
+  getDialect(): Base {
+    return this.dialect
+  }
+
+  /**
    * Closes all connections in the pool.
    */
   async close(): Promise<void> {

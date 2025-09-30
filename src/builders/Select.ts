@@ -5,9 +5,7 @@ import type {
   QueryDirectionType,
   QuerySubQuery,
   QueryWindowSpec,
-  QueryWindowFunction,
-  QueryCTEClause,
-  QueryUnionClause
+  QueryWindowFunction
 } from '@interfaces/index'
 import { WhereConditionHelper } from '@builders/helpers/index'
 import {
@@ -21,6 +19,7 @@ import {
 } from '@builders/mixins/index'
 import { BaseQueryBuilder } from '@builders/Query'
 import { QueryValidator } from '@core/security/index'
+import { Base } from '@core/dialects/index'
 
 /**
  * Query builder for SELECT operations with fluent interface.
@@ -623,18 +622,8 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    */
   private buildCteClause(parts: string[]): void {
     if (this.query.ctes != null && this.query.ctes.length > 0) {
-      const cteClauses: string[] = this.query.ctes.map((cte: QueryCTEClause) => {
-        const name: string = this.escapeIdentifier(cte.name)
-        const recursive: string = cte.recursive === true ? 'RECURSIVE ' : ''
-        // Build the CTE query using the stored query object
-        if (cte.query != null) {
-          // For now, use a placeholder since CTE queries need to be built separately
-          const cteQuery: string = 'SELECT 1'
-          return `${recursive}${name} AS (${cteQuery})`
-        }
-        return `${recursive}${name} AS (SELECT 1)`
-      })
-      parts.push('WITH', cteClauses.join(', '))
+      const dialect: Base = this.connectionManager.getDialect()
+      dialect.buildCTEClause(this.query, parts, this.params)
     }
   }
 
@@ -644,16 +633,8 @@ export class SelectBuilder<T = unknown> extends BaseQueryBuilder<T> {
    */
   private buildUnionClause(parts: string[]): void {
     if (this.query.unions != null && this.query.unions.length > 0) {
-      this.query.unions.forEach((union: QueryUnionClause) => {
-        // Build the UNION query using the stored query object
-        if (union.query != null) {
-          // For now, use a placeholder since UNION queries need to be built separately
-          const unionQuery: string = 'SELECT 1'
-          parts.push(union.type, unionQuery)
-        } else {
-          parts.push(union.type, 'SELECT 1')
-        }
-      })
+      const dialect: Base = this.connectionManager.getDialect()
+      dialect.buildUnionClauses(this.query, parts, this.params)
     }
   }
 }
