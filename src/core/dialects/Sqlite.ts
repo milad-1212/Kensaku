@@ -6,13 +6,12 @@ import type {
   DatabaseTransaction,
   QueryDelete,
   QueryInsert,
-  QueryMerge,
   QuerySelect,
   QueryStatement,
   QueryUpdate
 } from '@interfaces/index'
 import { Base } from '@core/dialects/index'
-import { DialectFactory, ParameterBuilders, QueryBuilders } from '@core/dialects/builders'
+import { DialectFactory, QueryBuilders } from '@core/dialects/builders'
 
 /**
  * SQLite database dialect implementation.
@@ -192,86 +191,11 @@ export class Sqlite extends Base {
   }
 
   /**
-   * Escapes a SQLite identifier.
-   * @param name - Identifier to escape
-   * @returns Escaped identifier string
-   */
-  escapeIdentifier(name: string): string {
-    if (name.includes('.')) {
-      return name
-        .split('.')
-        .map((part: string) => `"${part.replace(/"/g, '""')}"`)
-        .join('.')
-    }
-    return `"${name.replace(/"/g, '""')}"`
-  }
-
-  /**
-   * Escapes a value for SQLite.
-   * @param value - Value to escape
-   * @returns Escaped value string
-   */
-  escapeValue(value: unknown): string {
-    if (value === null || value === undefined) {
-      return 'NULL'
-    }
-    if (typeof value === 'string') {
-      return `'${value.replace(/'/g, '\'\'')}'`
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value)
-    }
-    if (value instanceof Date) {
-      return `'${value.toISOString()}'`
-    }
-    return `'${JSON.stringify(value).replace(/'/g, '\'\'')}'`
-  }
-
-  /**
    * Maps a generic data type to SQLite-specific type.
    * @param type - Generic data type
    * @returns SQLite-specific data type
    */
   getDataType(type: string): string {
     return DialectFactory.createGetDataTypeMethod('sqlite')(type)
-  }
-
-  /**
-   * Gets the LIMIT/OFFSET syntax for SQLite.
-   * @param limit - Number of rows to limit
-   * @param offset - Number of rows to skip
-   * @returns SQLite LIMIT/OFFSET SQL syntax
-   */
-  getLimitSyntax(limit?: number, offset?: number): string {
-    if (limit === undefined) {
-      return ''
-    }
-    if (offset === undefined || offset === 0) {
-      return `LIMIT ${limit}`
-    }
-    return `LIMIT ${limit} OFFSET ${offset}`
-  }
-
-  /**
-   * Builds a MERGE query for SQLite (not supported, throws error).
-   * @param _query - MERGE query object (unused)
-   * @returns Object containing SQL string and parameters
-   * @throws {Error} MERGE is not supported in SQLite
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  buildMergeQuery(_query: QueryMerge): QueryStatement {
-    throw new Error(
-      'MERGE queries are not supported in SQLite. Use INSERT ... ON CONFLICT instead.'
-    )
-  }
-
-  /**
-   * Adds a parameter to the params array and returns SQLite placeholder.
-   * @param value - Value to add as parameter
-   * @param params - Array to store parameters
-   * @returns SQLite parameter placeholder string
-   */
-  protected override addParam(value: unknown, params: unknown[]): string {
-    return ParameterBuilders.addParam(value, params)
   }
 }

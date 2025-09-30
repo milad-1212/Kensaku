@@ -5,13 +5,12 @@ import type {
   DatabaseTransaction,
   QueryDelete,
   QueryInsert,
-  QueryMerge,
   QuerySelect,
   QueryUpdate,
   QueryStatement
 } from '@interfaces/index'
 import { Base } from '@core/dialects/index'
-import { DialectFactory, ParameterBuilders, QueryBuilders } from '@core/dialects/builders/index'
+import { DialectFactory, QueryBuilders } from '@core/dialects/builders/index'
 import type { FieldPacket } from 'mysql2'
 
 /**
@@ -217,7 +216,7 @@ export class MySql extends Base {
    * @param name - Identifier to escape
    * @returns Escaped identifier string
    */
-  escapeIdentifier(name: string): string {
+  override escapeIdentifier(name: string): string {
     if (name.includes('.')) {
       return name
         .split('.')
@@ -232,7 +231,7 @@ export class MySql extends Base {
    * @param value - Value to escape
    * @returns Escaped value string
    */
-  escapeValue(value: unknown): string {
+  override escapeValue(value: unknown): string {
     if (value === null || value === undefined) {
       return 'NULL'
     }
@@ -277,37 +276,16 @@ export class MySql extends Base {
    * @param offset - Number of rows to skip
    * @returns MySQL LIMIT/OFFSET SQL syntax
    */
-  getLimitSyntax(limit?: number, offset?: number): string {
-    if (limit !== undefined && limit > 0 && offset !== undefined && offset > 0) {
-      return `LIMIT ${offset}, ${limit}`
-    } else if (limit !== undefined && limit > 0) {
-      return `LIMIT ${limit}`
+  override getLimitSyntax(limit?: number, offset?: number): string {
+    if (limit !== undefined && limit >= 0 && offset !== undefined && offset > 0) {
+      const safeLimit: number = Math.min(limit, Base.MAX_LIMIT)
+      return `LIMIT ${offset}, ${safeLimit}`
+    } else if (limit !== undefined && limit >= 0) {
+      const safeLimit: number = Math.min(limit, Base.MAX_LIMIT)
+      return `LIMIT ${safeLimit}`
     } else if (offset !== undefined && offset > 0) {
-      return `LIMIT ${offset}, 18446744073709551615`
+      return `LIMIT ${offset}, ${Base.MAX_LIMIT}`
     }
     return ''
-  }
-
-  /**
-   * Builds a MERGE query for MySQL (not supported, throws error).
-   * @param _query - MERGE query object (unused)
-   * @returns Object containing SQL string and parameters
-   * @throws {Error} MERGE is not supported in MySQL
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  buildMergeQuery(_query: QueryMerge): QueryStatement {
-    throw new Error(
-      'MERGE queries are not supported in MySQL. Use INSERT ... ON DUPLICATE KEY UPDATE instead.'
-    )
-  }
-
-  /**
-   * Adds a parameter to the params array and returns MySQL placeholder.
-   * @param value - Value to add as parameter
-   * @param params - Array to store parameters
-   * @returns Parameter placeholder string
-   */
-  protected override addParam(value: unknown, params: unknown[]): string {
-    return ParameterBuilders.addParam(value, params)
   }
 }

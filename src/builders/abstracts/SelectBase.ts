@@ -9,7 +9,7 @@ import { QueryValidator } from '@core/security/index'
  * @description Provides core SELECT functionality including column selection, FROM clause, and basic query building.
  * @template T - Return type of query results
  */
-export abstract class SelectBaseBuilderX<T = unknown> extends BaseQueryBuilder<T> {
+export abstract class SelectBaseBuilder<T = unknown> extends BaseQueryBuilder<T> {
   /** Internal query object that stores the SELECT query structure */
   protected readonly query: QuerySelect = {}
 

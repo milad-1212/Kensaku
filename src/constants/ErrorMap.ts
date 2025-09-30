@@ -37,7 +37,9 @@ export const errorMessages: ErrorMap = {
     MERGE_MISSING_USING: 'MERGE query must have a USING clause',
     MERGE_MISSING_ON: 'MERGE query must have ON conditions',
     MERGE_MISSING_WHEN: 'MERGE query must have WHEN MATCHED or WHEN NOT MATCHED clause',
-    MERGE_INSERT_DATA_REQUIRED: 'Insert data is required for WHEN NOT MATCHED'
+    MERGE_INSERT_DATA_REQUIRED: 'Insert data is required for WHEN NOT MATCHED',
+    MERGE_NOT_SUPPORTED:
+      'MERGE queries are not supported in this dialect. Use dialect-specific alternatives'
   },
   WHERE: {
     INVALID_RAW_CONDITION: 'RAW WHERE condition must have a valid SQL string',

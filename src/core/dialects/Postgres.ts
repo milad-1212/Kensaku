@@ -235,56 +235,6 @@ export class Postgres extends Base {
   }
 
   /**
-   * Escapes a PostgreSQL identifier.
-   * @param name - Identifier to escape
-   * @returns Escaped identifier string
-   */
-  escapeIdentifier(name: string): string {
-    if (name.includes('.')) {
-      return name
-        .split('.')
-        .map((part: string) => `"${part.replace(/"/g, '""')}"`)
-        .join('.')
-    }
-    return `"${name.replace(/"/g, '""')}"`
-  }
-
-  /**
-   * Escapes a value for PostgreSQL.
-   * @param value - Value to escape
-   * @returns Escaped value string
-   */
-  escapeValue(value: unknown): string {
-    if (value === null || value === undefined) {
-      return 'NULL'
-    }
-    if (typeof value === 'string') {
-      return `'${value.replace(/'/g, '\'\'')}'`
-    }
-    if (typeof value === 'boolean') {
-      return value ? 'TRUE' : 'FALSE'
-    }
-    if (value instanceof Date) {
-      return `'${value.toISOString()}'`
-    }
-    if (Array.isArray(value)) {
-      const items: string = value.map((v: unknown) => this.escapeValue(v)).join(', ')
-      return `ARRAY[${items}]`
-    }
-    if (typeof value === 'object' && value != null) {
-      const jsonString: string = JSON.stringify(value)
-      return `'${jsonString.replace(/'/g, '\'\'')}'`
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value)
-    }
-    if (typeof value === 'symbol' || typeof value === 'bigint') {
-      return String(value)
-    }
-    return String(value as string | number | boolean | symbol | bigint)
-  }
-
-  /**
    * Maps a generic data type to PostgreSQL-specific type.
    * @param type - Generic data type
    * @returns PostgreSQL-specific data type
@@ -294,28 +244,11 @@ export class Postgres extends Base {
   }
 
   /**
-   * Gets the LIMIT/OFFSET syntax for PostgreSQL.
-   * @param limit - Number of rows to limit
-   * @param offset - Number of rows to skip
-   * @returns PostgreSQL LIMIT/OFFSET SQL syntax
-   */
-  getLimitSyntax(limit?: number, offset?: number): string {
-    const parts: string[] = []
-    if (limit !== undefined && limit > 0) {
-      parts.push(`LIMIT ${limit}`)
-    }
-    if (offset !== undefined && offset > 0) {
-      parts.push(`OFFSET ${offset}`)
-    }
-    return parts.join(' ')
-  }
-
-  /**
    * Builds a MERGE query for PostgreSQL.
    * @param query - MERGE query object
    * @returns Object containing SQL string and parameters
    */
-  buildMergeQuery(query: QueryMerge): QueryStatement {
+  override buildMergeQuery(query: QueryMerge): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
     parts.push('MERGE INTO', this.escapeIdentifier(query.into))

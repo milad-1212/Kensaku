@@ -11,12 +11,15 @@ import type {
   QueryWhereCondition
 } from '@interfaces/index'
 import { ClauseBuilders, ParameterBuilders, QueryBuilders } from '@core/dialects/builders'
+import { errorMessages } from '@constants/index'
 
 /**
  * Abstract base class for database dialect implementations.
  * @description Provides the interface that all database dialects must implement.
  */
 export abstract class Base {
+  /** Maximum limit value for queries */
+  protected static readonly MAX_LIMIT: number = 1000000
   /** Database configuration object */
   protected config: DatabaseConfig
 
@@ -67,22 +70,56 @@ export abstract class Base {
    * Builds a MERGE query for this dialect.
    * @param query - MERGE query object
    * @returns Object containing SQL string and parameters
+   * @throws {Error} When dialect doesn't support MERGE operations
    */
-  abstract buildMergeQuery(query: QueryMerge): QueryStatement
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildMergeQuery(_query: QueryMerge): QueryStatement {
+    throw new Error(errorMessages.QUERY.MERGE_NOT_SUPPORTED)
+  }
 
   /**
    * Escapes a database identifier for this dialect.
    * @param name - Identifier to escape
    * @returns Escaped identifier string
    */
-  abstract escapeIdentifier(name: string): string
+  escapeIdentifier(name: string): string {
+    if (name.includes('.')) {
+      return name
+        .split('.')
+        .map((part: string) => `"${part.replace(/"/g, '""')}"`)
+        .join('.')
+    }
+    return `"${name.replace(/"/g, '""')}"`
+  }
 
   /**
    * Escapes a value for this dialect.
    * @param value - Value to escape
    * @returns Escaped value string
    */
-  abstract escapeValue(value: unknown): string
+  escapeValue(value: unknown): string {
+    if (value === null || value === undefined) {
+      return 'NULL'
+    }
+    if (typeof value === 'string') {
+      return `'${value.replace(/'/g, '\'\'')}'`
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'TRUE' : 'FALSE'
+    }
+    if (value instanceof Date) {
+      return `'${value.toISOString()}'`
+    }
+    if (Array.isArray(value)) {
+      const items: string = value.map((v: unknown) => this.escapeValue(v)).join(', ')
+      return `ARRAY[${items}]`
+    }
+    if (typeof value === 'object' && value != null) {
+      const jsonString: string = JSON.stringify(value)
+      return `'${jsonString.replace(/'/g, '\'\'')}'`
+    }
+    return JSON.stringify(value)
+  }
 
   /**
    * Maps a generic data type to this dialect's specific type.
@@ -97,7 +134,17 @@ export abstract class Base {
    * @param offset - Number of rows to skip
    * @returns LIMIT/OFFSET SQL syntax
    */
-  abstract getLimitSyntax(limit?: number, offset?: number): string
+  getLimitSyntax(limit?: number, offset?: number): string {
+    const parts: string[] = []
+    if (limit !== undefined && limit >= 0) {
+      const safeLimit: number = Math.min(limit, Base.MAX_LIMIT)
+      parts.push(`LIMIT ${safeLimit}`)
+    }
+    if (offset !== undefined && offset > 0) {
+      parts.push(`OFFSET ${offset}`)
+    }
+    return parts.join(' ')
+  }
 
   /**
    * Builds CTE (Common Table Expression) clauses.

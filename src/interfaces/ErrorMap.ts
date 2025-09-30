@@ -36,6 +36,7 @@ export interface ErrorMap {
     MERGE_MISSING_ON: string
     MERGE_MISSING_WHEN: string
     MERGE_INSERT_DATA_REQUIRED: string
+    MERGE_NOT_SUPPORTED: string
   }
   WHERE: {
     INVALID_RAW_CONDITION: string
