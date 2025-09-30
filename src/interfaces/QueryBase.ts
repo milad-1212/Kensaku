@@ -1,3 +1,11 @@
+import type {
+  QueryArrayFunction,
+  QueryArrayOperation,
+  QueryArraySlice,
+  QueryJsonFunction,
+  QueryJsonPath
+} from '@interfaces/index'
+
 /**
  * Supported aggregation functions.
  */
@@ -314,6 +322,16 @@ export interface QuerySelect {
   unpivot?: QueryUnpivotClause
   /** WITH ORDINALITY clause */
   ordinality?: QueryOrdinalityClause
+  /** JSON path operations */
+  jsonPaths?: QueryJsonPath[]
+  /** JSON function operations */
+  jsonFunctions?: QueryJsonFunction[]
+  /** Array operations */
+  arrayOperations?: QueryArrayOperation[]
+  /** Array function operations */
+  arrayFunctions?: QueryArrayFunction[]
+  /** Array slice operations */
+  arraySlices?: QueryArraySlice[]
 }
 
 /**

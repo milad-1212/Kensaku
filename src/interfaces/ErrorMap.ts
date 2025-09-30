@@ -48,6 +48,8 @@ export interface ErrorMap {
     PIVOT_NOT_SUPPORTED: string
     UNPIVOT_NOT_SUPPORTED: string
     ORDINALITY_NOT_SUPPORTED: string
+    JSON_NOT_SUPPORTED: string
+    ARRAY_NOT_SUPPORTED: string
   }
   WHERE: {
     INVALID_RAW_CONDITION: string

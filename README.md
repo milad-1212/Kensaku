@@ -133,16 +133,16 @@ TypeScript SQL query builder with type safety and multi-database support. Provid
       - [ ] Query execution plans
       - [ ] Performance analysis
       - [ ] Query optimization hints
-    - [ ] **JSON Operations**
-      - [ ] JSON path queries (->, ->>)
-      - [ ] JSON functions (json_extract, json_set, etc.)
-      - [ ] JSON aggregation functions
-      - [ ] JSON validation
-    - [ ] **Array Operations**
-      - [ ] Array functions (array_agg, unnest, etc.)
-      - [ ] Array operators (@>, <@, &&)
-      - [ ] Array indexing
-      - [ ] Array slicing
+    - [x] **JSON Operations**
+      - [x] JSON path queries (->, ->>)
+      - [x] JSON functions (json_extract, json_set, etc.)
+      - [x] JSON aggregation functions
+      - [x] JSON validation
+    - [x] **Array Operations**
+      - [x] Array functions (array_agg, unnest, etc.)
+      - [x] Array operators (@>, <@, &&)
+      - [x] Array indexing
+      - [x] Array slicing
     - [ ] **Prepared statements**
       - [ ] Prepare statements
       - [ ] Execute prepared statements

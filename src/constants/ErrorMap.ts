@@ -53,7 +53,9 @@ export const errorMessages: ErrorMap = {
     UNPIVOT_NOT_SUPPORTED:
       'UNPIVOT operations are not supported in this dialect. Use UNION ALL with CASE statements instead.',
     ORDINALITY_NOT_SUPPORTED:
-      'WITH ORDINALITY is not supported in this dialect. Use ROW_NUMBER() window function instead.'
+      'WITH ORDINALITY is not supported in this dialect. Use ROW_NUMBER() window function instead.',
+    JSON_NOT_SUPPORTED: 'JSON operations are not supported in this dialect.',
+    ARRAY_NOT_SUPPORTED: 'Array operations are not supported in this dialect.'
   },
   WHERE: {
     INVALID_RAW_CONDITION: 'RAW WHERE condition must have a valid SQL string',

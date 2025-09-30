@@ -100,6 +100,60 @@ export abstract class Base {
   }
 
   /**
+   * Builds JSON path clauses for this dialect.
+   * @param query - SELECT query object
+   * @returns SQL string for JSON path clauses
+   * @throws {Error} When dialect doesn't support JSON operations
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildJsonPathClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.JSON_NOT_SUPPORTED)
+  }
+
+  /**
+   * Builds JSON function clauses for this dialect.
+   * @param query - SELECT query object
+   * @returns SQL string for JSON function clauses
+   * @throws {Error} When dialect doesn't support JSON operations
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildJsonFunctionClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.JSON_NOT_SUPPORTED)
+  }
+
+  /**
+   * Builds array operation clauses for this dialect.
+   * @param query - SELECT query object
+   * @returns SQL string for array operation clauses
+   * @throws {Error} When dialect doesn't support array operations
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildArrayOperationClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.ARRAY_NOT_SUPPORTED)
+  }
+
+  /**
+   * Builds array function clauses for this dialect.
+   * @param query - SELECT query object
+   * @returns SQL string for array function clauses
+   * @throws {Error} When dialect doesn't support array operations
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildArrayFunctionClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.ARRAY_NOT_SUPPORTED)
+  }
+
+  /**
+   * Builds array slice clause (throws error by default).
+   * @param query - SELECT query object
+   * @returns SQL string for array slice
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  buildArraySliceClause(_query: QuerySelect): string {
+    throw new Error(errorMessages.QUERY.ARRAY_NOT_SUPPORTED)
+  }
+
+  /**
    * Builds a MERGE query for this dialect.
    * @param query - MERGE query object
    * @returns Object containing SQL string and parameters
@@ -153,7 +207,6 @@ export abstract class Base {
     }
     return JSON.stringify(value)
   }
-
   /**
    * Maps a generic data type to this dialect's specific type.
    * @param type - Generic data type

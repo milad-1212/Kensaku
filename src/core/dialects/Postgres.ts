@@ -3,12 +3,18 @@ import type {
   DatabaseConfig,
   DatabaseQueryResult,
   DatabaseTransaction,
-  QuerySelect,
-  QueryInsert,
-  QueryUpdate,
+  QueryAggregationExpression,
+  QueryArrayFunction,
+  QueryArrayOperation,
+  QueryArraySlice,
   QueryDelete,
+  QueryInsert,
+  QueryJsonFunction,
+  QueryJsonPath,
   QueryMerge,
-  QueryStatement
+  QuerySelect,
+  QueryStatement,
+  QueryUpdate
 } from '@interfaces/index'
 import { Base } from '@core/dialects/Base'
 import { ParameterBuilders, DialectFactory, QueryBuilders } from '@core/dialects/builders/index'
@@ -95,40 +101,8 @@ export class Postgres extends Base {
   buildSelectQuery(query: QuerySelect): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
-    if (query.ctes !== undefined && query.ctes.length > 0) {
-      this.buildCTEClause(query, parts, params)
-    }
-    this.buildSelectClause(query, parts)
-    this.buildFromClause(query, parts)
-    this.buildJoinClauses(query, parts)
-    this.buildWhereClause(query, parts, params)
-    this.buildGroupByClause(query, parts)
-    this.buildHavingClause(query, parts, params)
-    this.buildOrderByClause(query, parts, params)
-    this.buildLimitClause(query, parts, params)
-    this.buildOffsetClause(query, parts, params)
-
-    // Add PIVOT/UNPIVOT/WITH ORDINALITY clauses
-    if (query.pivot) {
-      const pivotClause: string = this.buildPivotClause(query)
-      if (pivotClause) {
-        parts.push(pivotClause)
-      }
-    }
-
-    if (query.unpivot) {
-      const unpivotClause: string = this.buildUnpivotClause(query)
-      if (unpivotClause) {
-        parts.push(unpivotClause)
-      }
-    }
-
-    if (query.ordinality) {
-      const ordinalityClause: string = this.buildOrdinalityClause(query)
-      if (ordinalityClause) {
-        parts.push(ordinalityClause)
-      }
-    }
+    this.buildBasicSelectClauses(query, parts, params)
+    this.buildAdvancedClauses(query, parts)
     QueryBuilders.buildSetOperations(
       query,
       parts,
@@ -139,6 +113,263 @@ export class Postgres extends Base {
     return {
       sql: parts.join(' '),
       params
+    }
+  }
+
+  /**
+   * Builds basic SELECT clauses (CTE, SELECT, FROM, JOIN, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, OFFSET).
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   * @param params - Parameters array
+   */
+  private buildBasicSelectClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
+    if (query.ctes !== undefined && query.ctes.length > 0) {
+      this.buildCTEClause(query, parts, params)
+    }
+    this.buildSelectClauseWithJsonAndArray(query, parts)
+    this.buildFromClause(query, parts)
+    this.buildJoinClauses(query, parts)
+    this.buildWhereClauseWithArrayOperations(query, parts, params)
+    this.buildGroupByClause(query, parts)
+    this.buildHavingClause(query, parts, params)
+    this.buildOrderByClause(query, parts, params)
+    this.buildLimitClause(query, parts, params)
+    this.buildOffsetClause(query, parts, params)
+  }
+
+  /**
+   * Builds SELECT clause with integrated JSON and Array operations.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildSelectClauseWithJsonAndArray(query: QuerySelect, parts: string[]): void {
+    parts.push('SELECT')
+    if (query.distinct === true) {
+      parts.push('DISTINCT')
+    }
+    const selectParts: string[] = []
+    this.addBasicSelectParts(query, selectParts)
+    this.addAdvancedSelectParts(query, selectParts)
+    if (selectParts.length > 0) {
+      parts.push(selectParts.join(', '))
+    }
+  }
+
+  /**
+   * Adds basic SELECT parts (columns and aggregations).
+   * @param query - SELECT query object
+   * @param selectParts - SELECT parts array
+   */
+  private addBasicSelectParts(query: QuerySelect, selectParts: string[]): void {
+    if (query.columns !== undefined && query.columns.length > 0) {
+      const columns: string = query.columns
+        .map((col: string) => this.escapeIdentifier(col))
+        .join(', ')
+      selectParts.push(columns)
+    } else if (query.aggregations === undefined || query.aggregations.length === 0) {
+      selectParts.push('*')
+    }
+    if (query.aggregations !== undefined && query.aggregations.length > 0) {
+      const aggregations: string = query.aggregations
+        .map((agg: QueryAggregationExpression): string => this.buildAggregationExpression(agg))
+        .join(', ')
+      selectParts.push(aggregations)
+    }
+  }
+
+  /**
+   * Adds advanced SELECT parts (JSON and Array operations).
+   * @param query - SELECT query object
+   * @param selectParts - SELECT parts array
+   */
+  private addAdvancedSelectParts(query: QuerySelect, selectParts: string[]): void {
+    this.addJsonSelectParts(query, selectParts)
+    this.addArraySelectParts(query, selectParts)
+  }
+
+  /**
+   * Adds JSON SELECT parts.
+   * @param query - SELECT query object
+   * @param selectParts - SELECT parts array
+   */
+  private addJsonSelectParts(query: QuerySelect, selectParts: string[]): void {
+    if (query.jsonPaths && query.jsonPaths.length > 0) {
+      const jsonPathClause: string = this.buildJsonPathClause(query)
+      if (jsonPathClause) {
+        selectParts.push(jsonPathClause)
+      }
+    }
+    if (query.jsonFunctions && query.jsonFunctions.length > 0) {
+      const jsonFunctionClause: string = this.buildJsonFunctionClause(query)
+      if (jsonFunctionClause) {
+        selectParts.push(jsonFunctionClause)
+      }
+    }
+  }
+
+  /**
+   * Adds Array SELECT parts.
+   * @param query - SELECT query object
+   * @param selectParts - SELECT parts array
+   */
+  private addArraySelectParts(query: QuerySelect, selectParts: string[]): void {
+    if (query.arrayFunctions && query.arrayFunctions.length > 0) {
+      const arrayFunctionClause: string = this.buildArrayFunctionClause(query)
+      if (arrayFunctionClause) {
+        selectParts.push(arrayFunctionClause)
+      }
+    }
+    if (query.arraySlices && query.arraySlices.length > 0) {
+      const arraySliceClause: string = this.buildArraySliceClause(query)
+      if (arraySliceClause) {
+        selectParts.push(arraySliceClause)
+      }
+    }
+  }
+
+  /**
+   * Builds aggregation expression.
+   * @param agg - Aggregation expression
+   * @returns SQL string for aggregation
+   */
+  private buildAggregationExpression(agg: QueryAggregationExpression): string {
+    let sql: string
+    if (agg.function === 'PERCENTILE_CONT' || agg.function === 'PERCENTILE_DISC') {
+      const percentile: number = agg.percentile ?? 0.5
+      sql = `${agg.function}(${percentile}) WITHIN GROUP (ORDER BY ${this.escapeIdentifier(agg.column)})`
+    } else {
+      sql = `${agg.function}(${agg.distinct === true ? 'DISTINCT ' : ''}${this.escapeIdentifier(agg.column)})`
+    }
+    if (agg.alias !== undefined) {
+      sql += ` AS ${this.escapeIdentifier(agg.alias)}`
+    }
+    return sql
+  }
+
+  /**
+   * Escapes a value for PostgreSQL.
+   * @param value - Value to escape
+   * @returns Escaped value string
+   */
+  override escapeValue(value: unknown): string {
+    if (value === null || value === undefined) {
+      return 'NULL'
+    }
+    if (typeof value === 'string') {
+      return `'${value.replace(/'/g, '\'\'')}'`
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false'
+    }
+    if (typeof value === 'number') {
+      return String(value)
+    }
+    if (typeof value === 'bigint') {
+      return String(value)
+    }
+    if (typeof value === 'symbol') {
+      return `'${String(value).replace(/'/g, '\'\'')}'`
+    }
+    if (typeof value === 'function') {
+      return `'${String(value).replace(/'/g, '\'\'')}'`
+    }
+    if (value instanceof Date) {
+      return `'${value.toISOString()}'`
+    }
+    if (Array.isArray(value)) {
+      const items: string = value.map((v: unknown) => this.escapeValue(v)).join(', ')
+      return `ARRAY[${items}]`
+    }
+    if (typeof value === 'object' && value != null) {
+      const jsonString: string = JSON.stringify(value)
+      return `'${jsonString.replace(/'/g, '\'\'')}'`
+    }
+    const stringValue: string = typeof value === 'string' ? value : JSON.stringify(value)
+    return `'${stringValue.replace(/'/g, '\'\'')}'`
+  }
+
+  /**
+   * Builds advanced SELECT clauses (PIVOT, UNPIVOT, ORDINALITY).
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildAdvancedClauses(query: QuerySelect, parts: string[]): void {
+    this.buildPivotClauses(query, parts)
+    this.buildUnpivotClauses(query, parts)
+    this.buildOrdinalityClauses(query, parts)
+  }
+
+  /**
+   * Builds WHERE clause with integrated Array operations.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   * @param params - Parameters array
+   */
+  private buildWhereClauseWithArrayOperations(
+    query: QuerySelect,
+    parts: string[],
+    params: unknown[]
+  ): void {
+    this.buildWhereClause(query, parts, params)
+    if (query.arrayOperations && query.arrayOperations.length > 0) {
+      const arrayConditions: string[] = query.arrayOperations.map(
+        (arrayOp: QueryArrayOperation) => {
+          const column: string = this.escapeIdentifier(arrayOp.column)
+          const value: string = Array.isArray(arrayOp.value)
+            ? `ARRAY[${arrayOp.value.map((v: unknown) => this.escapeValue(v)).join(', ')}]`
+            : this.escapeValue(arrayOp.value)
+          return `${column} ${arrayOp.operator} ${value}`
+        }
+      )
+      if (arrayConditions.length > 0) {
+        if (query.where && query.where.length > 0) {
+          parts.push('AND', `(${arrayConditions.join(' AND ')})`)
+        } else {
+          parts.push('WHERE', arrayConditions.join(' AND '))
+        }
+      }
+    }
+  }
+
+  /**
+   * Builds PIVOT clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildPivotClauses(query: QuerySelect, parts: string[]): void {
+    if (query.pivot) {
+      const pivotClause: string = this.buildPivotClause(query)
+      if (pivotClause) {
+        parts.push(pivotClause)
+      }
+    }
+  }
+
+  /**
+   * Builds UNPIVOT clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildUnpivotClauses(query: QuerySelect, parts: string[]): void {
+    if (query.unpivot) {
+      const unpivotClause: string = this.buildUnpivotClause(query)
+      if (unpivotClause) {
+        parts.push(unpivotClause)
+      }
+    }
+  }
+
+  /**
+   * Builds WITH ORDINALITY clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildOrdinalityClauses(query: QuerySelect, parts: string[]): void {
+    if (query.ordinality) {
+      const ordinalityClause: string = this.buildOrdinalityClause(query)
+      if (ordinalityClause) {
+        parts.push(ordinalityClause)
+      }
     }
   }
 
@@ -380,5 +611,132 @@ export class Postgres extends Base {
     const { valueColumn, ordinalityColumn }: { valueColumn: string; ordinalityColumn: string } =
       query.ordinality
     return `WITH ORDINALITY AS ${this.escapeIdentifier(valueColumn)}, ${this.escapeIdentifier(ordinalityColumn)}`
+  }
+
+  /**
+   * Builds JSON path clauses for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for JSON path clauses
+   */
+  override buildJsonPathClause(query: QuerySelect): string {
+    if (!query.jsonPaths || query.jsonPaths.length === 0) {
+      return ''
+    }
+    const jsonPathClauses: string[] = query.jsonPaths.map((jsonPath: QueryJsonPath) => {
+      const column: string = this.escapeIdentifier(jsonPath.column)
+      const path: string = `'${jsonPath.path}'`
+      const alias: string =
+        jsonPath.alias !== undefined ? ` AS ${this.escapeIdentifier(jsonPath.alias)}` : ''
+      return `${column}${jsonPath.operator}${path}${alias}`
+    })
+    return jsonPathClauses.join(', ')
+  }
+
+  /**
+   * Builds JSON function clauses for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for JSON function clauses
+   */
+  override buildJsonFunctionClause(query: QuerySelect): string {
+    if (!query.jsonFunctions || query.jsonFunctions.length === 0) {
+      return ''
+    }
+    const jsonFunctionClauses: string[] = query.jsonFunctions.map((jsonFunc: QueryJsonFunction) => {
+      const column: string = this.escapeIdentifier(jsonFunc.column)
+      const path: string = `'${jsonFunc.path}'`
+      const alias: string =
+        jsonFunc.alias !== undefined ? ` AS ${this.escapeIdentifier(jsonFunc.alias)}` : ''
+      switch (jsonFunc.function) {
+        case 'json_extract':
+          return `json_extract(${column}, ${path})${alias}`
+        case 'json_set':
+          return `json_set(${column}, ${path}, ${this.escapeValue(jsonFunc.value ?? null)})${alias}`
+        case 'json_remove':
+          return `json_remove(${column}, ${path})${alias}`
+        case 'json_insert':
+          return `json_insert(${column}, ${path}, ${this.escapeValue(jsonFunc.value ?? null)})${alias}`
+        case 'json_replace':
+          return `json_replace(${column}, ${path}, ${this.escapeValue(jsonFunc.value ?? null)})${alias}`
+        case 'json_valid':
+          return `json_valid(${column})${alias}`
+      }
+    })
+    return jsonFunctionClauses.join(', ')
+  }
+
+  /**
+   * Builds array operation clauses for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for array operation clauses
+   */
+  override buildArrayOperationClause(query: QuerySelect): string {
+    if (!query.arrayOperations || query.arrayOperations.length === 0) {
+      return ''
+    }
+    const arrayOperationClauses: string[] = query.arrayOperations.map(
+      (arrayOp: QueryArrayOperation) => {
+        const column: string = this.escapeIdentifier(arrayOp.column)
+        const value: string = Array.isArray(arrayOp.value)
+          ? `ARRAY[${arrayOp.value.map((v: unknown) => this.escapeValue(v)).join(', ')}]`
+          : this.escapeValue(arrayOp.value)
+        return `${column} ${arrayOp.operator} ${value}`
+      }
+    )
+    return arrayOperationClauses.join(' AND ')
+  }
+
+  /**
+   * Builds array function clauses for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for array function clauses
+   */
+  override buildArrayFunctionClause(query: QuerySelect): string {
+    if (!query.arrayFunctions || query.arrayFunctions.length === 0) {
+      return ''
+    }
+    const arrayFunctionClauses: string[] = query.arrayFunctions.map(
+      (arrayFunc: QueryArrayFunction) => {
+        const column: string = this.escapeIdentifier(arrayFunc.column)
+        const alias: string =
+          arrayFunc.alias !== undefined ? ` AS ${this.escapeIdentifier(arrayFunc.alias)}` : ''
+        const orderBy: string =
+          arrayFunc.orderBy !== undefined && arrayFunc.orderBy.length > 0
+            ? ` ORDER BY ${arrayFunc.orderBy.map((col: string) => this.escapeIdentifier(col)).join(', ')}`
+            : ''
+        switch (arrayFunc.function) {
+          case 'array_agg':
+            return `array_agg(${column}${orderBy})${alias}`
+          case 'unnest':
+            return `unnest(${column})${alias}`
+          case 'array_length':
+            return `array_length(${column}, 1)${alias}`
+          case 'array_append':
+            return `array_append(${column}, ${this.escapeValue(arrayFunc.value ?? null)})${alias}`
+          case 'array_prepend':
+            return `array_prepend(${column}, ${this.escapeValue(arrayFunc.value ?? null)})${alias}`
+          case 'array_cat':
+            return `array_cat(${column}, ${this.escapeValue(arrayFunc.value ?? null)})${alias}`
+        }
+      }
+    )
+    return arrayFunctionClauses.join(', ')
+  }
+
+  /**
+   * Builds array slice clause for PostgreSQL.
+   * @param query - SELECT query object
+   * @returns SQL string for array slice
+   */
+  override buildArraySliceClause(query: QuerySelect): string {
+    if (!query.arraySlices || query.arraySlices.length === 0) {
+      return ''
+    }
+    const arraySliceClauses: string[] = query.arraySlices.map((arraySlice: QueryArraySlice) => {
+      const column: string = this.escapeIdentifier(arraySlice.column)
+      const alias: string =
+        arraySlice.alias !== undefined ? ` AS ${this.escapeIdentifier(arraySlice.alias)}` : ''
+      return `${column}[${arraySlice.start}:${arraySlice.end}]${alias}`
+    })
+    return arraySliceClauses.join(', ')
   }
 }

@@ -87,6 +87,28 @@ export class Sqlite extends Base {
   buildSelectQuery(query: QuerySelect): QueryStatement {
     const parts: string[] = []
     const params: unknown[] = []
+    this.buildBasicSelectClauses(query, parts, params)
+    this.buildAdvancedClauses(query, parts)
+    QueryBuilders.buildSetOperations(
+      query,
+      parts,
+      params,
+      this.escapeIdentifier.bind(this),
+      this.buildSelectQuery.bind(this)
+    )
+    return {
+      sql: parts.join(' '),
+      params
+    }
+  }
+
+  /**
+   * Builds basic SELECT clauses (CTE, SELECT, FROM, JOIN, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT, OFFSET).
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   * @param params - Parameters array
+   */
+  private buildBasicSelectClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
     if (query.ctes !== undefined && query.ctes.length > 0) {
       this.buildCTEClause(query, parts, params)
     }
@@ -99,34 +121,103 @@ export class Sqlite extends Base {
     this.buildOrderByClause(query, parts, params)
     this.buildLimitClause(query, parts, params)
     this.buildOffsetClause(query, parts, params)
+  }
+
+  /**
+   * Builds advanced SELECT clauses (PIVOT, UNPIVOT, ORDINALITY, JSON, Array operations).
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildAdvancedClauses(query: QuerySelect, parts: string[]): void {
+    this.buildPivotClauses(query, parts)
+    this.buildUnpivotClauses(query, parts)
+    this.buildOrdinalityClauses(query, parts)
+    this.buildJsonClauses(query, parts)
+    this.buildArrayClauses(query, parts)
+  }
+
+  /**
+   * Builds PIVOT clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildPivotClauses(query: QuerySelect, parts: string[]): void {
     if (query.pivot) {
       const pivotClause: string = this.buildPivotClause(query)
       if (pivotClause) {
         parts.push(pivotClause)
       }
     }
+  }
+
+  /**
+   * Builds UNPIVOT clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildUnpivotClauses(query: QuerySelect, parts: string[]): void {
     if (query.unpivot) {
       const unpivotClause: string = this.buildUnpivotClause(query)
       if (unpivotClause) {
         parts.push(unpivotClause)
       }
     }
+  }
+
+  /**
+   * Builds WITH ORDINALITY clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildOrdinalityClauses(query: QuerySelect, parts: string[]): void {
     if (query.ordinality) {
       const ordinalityClause: string = this.buildOrdinalityClause(query)
       if (ordinalityClause) {
         parts.push(ordinalityClause)
       }
     }
-    QueryBuilders.buildSetOperations(
-      query,
-      parts,
-      params,
-      this.escapeIdentifier.bind(this),
-      this.buildSelectQuery.bind(this)
-    )
-    return {
-      sql: parts.join(' '),
-      params
+  }
+
+  /**
+   * Builds JSON operation clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildJsonClauses(query: QuerySelect, parts: string[]): void {
+    if (query.jsonPaths && query.jsonPaths.length > 0) {
+      const jsonPathClause: string = this.buildJsonPathClause(query)
+      if (jsonPathClause) {
+        parts.push(jsonPathClause)
+      }
+    }
+    if (query.jsonFunctions && query.jsonFunctions.length > 0) {
+      const jsonFunctionClause: string = this.buildJsonFunctionClause(query)
+      if (jsonFunctionClause) {
+        parts.push(jsonFunctionClause)
+      }
+    }
+  }
+
+  /**
+   * Builds Array operation clauses.
+   * @param query - SELECT query object
+   * @param parts - SQL parts array
+   */
+  private buildArrayClauses(query: QuerySelect, parts: string[]): void {
+    if (query.arrayOperations && query.arrayOperations.length > 0) {
+      const arrayOperationClause: string = this.buildArrayOperationClause(query)
+      if (arrayOperationClause) {
+        parts.push(arrayOperationClause)
+      }
+    }
+    if (query.arrayFunctions && query.arrayFunctions.length > 0) {
+      const arrayFunctionClause: string = this.buildArrayFunctionClause(query)
+      if (arrayFunctionClause) {
+        parts.push(arrayFunctionClause)
+      }
+    }
+    if (query.arraySlices && query.arraySlices.length > 0) {
+      this.buildArraySliceClause(query)
     }
   }
 
