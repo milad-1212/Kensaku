@@ -1,4 +1,4 @@
-import type { ConnectionBase, DatabaseQueryResult, QueryBuilder } from '@interfaces/index'
+import type { QueryBuilder } from '@interfaces/index'
 import { Connection as ConnectionManager } from '@core/index'
 import { SelectBuilder, InsertBuilder, UpdateBuilder, DeleteBuilder } from '@builders/index'
 
@@ -61,22 +61,5 @@ export class QueryEngine {
    */
   createQuery(): QueryBuilder {
     return new SelectBuilder(this.connectionManager)
-  }
-
-  /**
-   * Executes a raw SQL query.
-   * @param sql - The raw SQL query string
-   * @param params - Optional array of parameters for the query
-   * @returns Promise that resolves to an array of query results
-   * @throws {Error} When SQL syntax is invalid or query execution fails
-   */
-  async raw(sql: string, params?: unknown[]): Promise<unknown[]> {
-    const connection: ConnectionBase = await this.connectionManager.getConnection()
-    try {
-      const result: DatabaseQueryResult = await connection.query(sql, params ?? [])
-      return result.rows
-    } finally {
-      await this.connectionManager.releaseConnection(connection)
-    }
   }
 }

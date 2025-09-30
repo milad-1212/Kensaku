@@ -10,7 +10,7 @@
  * import { Kensaku } from 'kensaku'
  *
  * const db = new Kensaku({
- *   type: 'postgresql',
+ *   type: 'postgres',
  *   host: 'localhost',
  *   port: 5432,
  *   database: 'mydb',

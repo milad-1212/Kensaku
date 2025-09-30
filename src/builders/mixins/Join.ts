@@ -72,6 +72,11 @@ export class JoinMixin {
    * @param table - Table to join
    */
   static addCrossJoin(query: QuerySelect, table: string): void {
-    this.addJoin(query, 'CROSS', table, [])
+    query.joins ??= []
+    query.joins.push({
+      type: 'CROSS',
+      table,
+      on: []
+    })
   }
 }

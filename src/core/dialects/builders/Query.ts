@@ -1,8 +1,10 @@
 import type {
+  QueryAggregationExpression,
+  QueryConditionalExpression,
+  QueryComparisonOperator,
   QuerySelect,
   QueryWhereCondition,
-  QueryWindowFunction,
-  QueryConditionalExpression
+  QueryWindowFunction
 } from '@interfaces/index'
 
 /**
@@ -35,11 +37,81 @@ export class QueryBuilders {
     if (query.distinct === true) {
       parts.push('DISTINCT')
     }
+    const selectParts: string[] = []
     if (query.columns !== undefined && query.columns.length > 0) {
       const columns: string = query.columns
         .map((col: string) => this.escapeIdentifier(col, escapeFn))
         .join(', ')
-      parts.push(columns)
+      selectParts.push(columns)
+    } else if (query.aggregations === undefined || query.aggregations.length === 0) {
+      selectParts.push('*')
+    }
+    if (query.aggregations !== undefined && query.aggregations.length > 0) {
+      const aggregations: string = query.aggregations
+        .map((agg: QueryAggregationExpression): string => {
+          let sql: string
+          if (agg.function === 'PERCENTILE_CONT' || agg.function === 'PERCENTILE_DISC') {
+            const percentile: number = agg.percentile ?? 0.5
+            sql = `${agg.function}(${percentile}) WITHIN GROUP (ORDER BY ${this.escapeIdentifier(agg.column, escapeFn)})`
+          } else {
+            sql = `${agg.function}(${agg.distinct === true ? 'DISTINCT ' : ''}${this.escapeIdentifier(agg.column, escapeFn)})`
+          }
+
+          if (agg.alias !== undefined) {
+            sql += ` AS ${this.escapeIdentifier(agg.alias, escapeFn)}`
+          }
+          return sql
+        })
+        .join(', ')
+      selectParts.push(aggregations)
+    }
+    if (query.windowFunctions !== undefined && query.windowFunctions.length > 0) {
+      const windowFunctions: string = query.windowFunctions
+        .map((wf: QueryWindowFunction): string => {
+          const args: string = wf.args != null ? `(${wf.args.join(', ')})` : '()'
+          let windowSpec: string = ''
+          if (wf.over !== undefined) {
+            windowSpec = this.buildWindowSpec(wf.over, escapeFn)
+          }
+          return `${wf.function}${args}${windowSpec}`
+        })
+        .join(', ')
+      selectParts.push(windowFunctions)
+    }
+    if (query.conditionals !== undefined && query.conditionals.length > 0) {
+      const conditionalExpressions: string = query.conditionals
+        .map((expr: QueryConditionalExpression): string => {
+          if (expr.type === 'CASE') {
+            let sql: string = 'CASE'
+            if (expr.case !== undefined) {
+              for (const caseExpr of expr.case) {
+                sql += ` WHEN ${caseExpr.when} THEN ${caseExpr.then}`
+              }
+            }
+            sql += ' END'
+            if (expr.alias !== undefined) {
+              sql += ` AS ${this.escapeIdentifier(expr.alias, escapeFn)}`
+            }
+            return sql
+          } else if (expr.type === 'COALESCE') {
+            const values: string =
+              expr.columns
+                ?.map((v: string): string => this.escapeIdentifier(v, escapeFn))
+                .join(', ') ?? ''
+            return `COALESCE(${values})`
+          } else if (expr.type === 'NULLIF') {
+            return `NULLIF(${this.escapeIdentifier(expr.column1 ?? '', escapeFn)}, ${this.escapeIdentifier(expr.column2 ?? '', escapeFn)})`
+          }
+          return ''
+        })
+        .filter((sql: string): boolean => sql.length > 0)
+        .join(', ')
+      if (conditionalExpressions.length > 0) {
+        selectParts.push(conditionalExpressions)
+      }
+    }
+    if (selectParts.length > 0) {
+      parts.push(selectParts.join(', '))
     } else {
       parts.push('*')
     }
@@ -67,16 +139,12 @@ export class QueryBuilders {
    * Builds JOIN clauses for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
    * @param escapeFn - Dialect-specific escape function
-   * @param buildWhereConditionsFn - Dialect-specific WHERE conditions builder
    */
   static buildJoinClauses(
     query: QuerySelect,
     parts: string[],
-    params: unknown[],
-    escapeFn: (name: string) => string,
-    buildWhereConditionsFn: (conditions: QueryWhereCondition[], params: unknown[]) => string
+    escapeFn: (name: string) => string
   ): void {
     if (query.joins !== undefined) {
       for (const join of query.joins) {
@@ -84,10 +152,49 @@ export class QueryBuilders {
           typeof join.table === 'string' ? join.table : join.table.alias ?? 'subquery'
         parts.push(join.type, 'JOIN', this.escapeIdentifier(tableName, escapeFn))
         if (join.on != null && join.on.length > 0) {
-          parts.push('ON', buildWhereConditionsFn(join.on, params))
+          parts.push('ON', this.buildJoinConditions(join.on, escapeFn))
         }
       }
     }
+  }
+
+  /**
+   * Builds JOIN conditions into SQL string.
+   * @param conditions - Array of JOIN conditions
+   * @param escapeFn - Dialect-specific escape function
+   * @returns SQL string for JOIN conditions
+   */
+  static buildJoinConditions(
+    conditions: QueryWhereCondition[],
+    escapeFn: (name: string) => string
+  ): string {
+    return conditions
+      .map((condition: QueryWhereCondition, index: number) => {
+        const column: string = escapeFn(condition.column)
+        const { operator }: { operator: QueryComparisonOperator } = condition
+        const value: string =
+          typeof condition.value === 'string' && this.isColumnReference(condition.value)
+            ? escapeFn(condition.value)
+            : String(condition.value)
+        const logical: string = condition.logical ?? 'AND'
+        if (index === 0) {
+          return `${column} ${operator} ${value}`
+        }
+        return `${logical} ${column} ${operator} ${value}`
+      })
+      .join(' ')
+  }
+
+  /**
+   * Checks if a value is a column reference (contains a dot or is a simple identifier).
+   * @param value - Value to check
+   * @returns True if the value appears to be a column reference
+   */
+  private static isColumnReference(value: unknown): boolean {
+    if (typeof value !== 'string') {
+      return false
+    }
+    return value.includes('.') || /^\w+$/.test(value)
   }
 
   /**
@@ -154,7 +261,8 @@ export class QueryBuilders {
   static buildOrderByClause(
     query: QuerySelect,
     parts: string[],
-    escapeFn: (name: string) => string
+    escapeFn: (name: string) => string,
+    params: unknown[]
   ): void {
     if (query.orderBy !== undefined && query.orderBy.length > 0) {
       const orders: string = query.orderBy
@@ -164,7 +272,20 @@ export class QueryBuilders {
             column: string
             /** Sort direction (ASC/DESC) */
             direction: string
-          }) => `${this.escapeIdentifier(order.column, escapeFn)} ${order.direction}`
+            /** Whether this is a raw expression */
+            isExpression?: boolean
+            /** Parameters for raw expressions */
+            params?: unknown[]
+          }) => {
+            const column: string =
+              order.isExpression === true
+                ? order.column
+                : this.escapeIdentifier(order.column, escapeFn)
+            if (order.params && order.params.length > 0) {
+              params.push(...order.params)
+            }
+            return `${column} ${order.direction}`
+          }
         )
         .join(', ')
       parts.push('ORDER BY', orders)
@@ -175,9 +296,13 @@ export class QueryBuilders {
    * Builds the LIMIT clause for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
    */
-  static buildLimitClause(query: QuerySelect, parts: string[]): void {
-    if (query.limit !== undefined && query.limit > 0) {
+  static buildLimitClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    if (query.limitRaw !== undefined) {
+      parts.push('LIMIT', query.limitRaw.sql)
+      params.push(...query.limitRaw.params)
+    } else if (query.limit !== undefined && query.limit > 0) {
       parts.push('LIMIT', query.limit.toString())
     }
   }
@@ -186,9 +311,13 @@ export class QueryBuilders {
    * Builds the OFFSET clause for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
    */
-  static buildOffsetClause(query: QuerySelect, parts: string[]): void {
-    if (query.offset !== undefined && query.offset > 0) {
+  static buildOffsetClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    if (query.offsetRaw !== undefined) {
+      parts.push('OFFSET', query.offsetRaw.sql)
+      params.push(...query.offsetRaw.params)
+    } else if (query.offset !== undefined && query.offset > 0) {
       parts.push('OFFSET', query.offset.toString())
     }
   }
@@ -239,10 +368,10 @@ export class QueryBuilders {
             expression = `COALESCE(${cond.columns?.map((col: string) => escapeFn(col)).join(', ') ?? ''})`
             break
           case 'NULLIF':
-            expression = `NULLIF(${escapeFn(cond.column1 ?? '')}, ${escapeFn(cond.column2 ?? '')})`
+            expression = `NULLIF(${escapeFn(String(cond.column1 ?? ''))}, ${escapeFn(String(cond.column2 ?? ''))})`
             break
         }
-        return cond.alias != null ? `${expression} AS ${escapeFn(cond.alias)}` : expression
+        return cond.alias != null ? `${expression} AS ${escapeFn(String(cond.alias))}` : expression
       })
       parts.push(',', conditionals.join(', '))
     }

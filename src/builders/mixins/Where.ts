@@ -1,6 +1,6 @@
 import type { QuerySelect, QueryWhereCondition, QueryComparisonOperator } from '@interfaces/index'
 import { WhereClauseHelper } from '@builders/helpers/index'
-import { getInvalidOperatorError } from '@constants/index'
+import { getInvalidOperatorError, validOperators } from '@constants/index'
 
 /**
  * Helper class for WHERE clause operations.
@@ -120,31 +120,6 @@ export class WhereMixin {
    * @throws {Error} If operator is not supported
    */
   static validateOperator(operator: string): void {
-    const validOperators: QueryComparisonOperator[] = [
-      '=',
-      '!=',
-      '<>',
-      '>',
-      '<',
-      '>=',
-      '<=',
-      'LIKE',
-      'ILIKE',
-      'NOT LIKE',
-      'IN',
-      'NOT IN',
-      'BETWEEN',
-      'NOT BETWEEN',
-      'IS NULL',
-      'IS NOT NULL',
-      'EXISTS',
-      'NOT EXISTS',
-      'IS DISTINCT FROM',
-      'SIMILAR TO',
-      'REGEXP',
-      'RLIKE',
-      'GLOB'
-    ]
     if (!validOperators.includes(operator as QueryComparisonOperator)) {
       throw new Error(getInvalidOperatorError(operator))
     }

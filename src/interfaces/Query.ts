@@ -152,6 +152,8 @@ export interface QueryOrderClause {
   direction: QueryDirectionType
   /** Whether this is a raw expression (not just a column) */
   isExpression?: boolean
+  /** Parameters for raw expressions */
+  params?: unknown[]
 }
 
 /**
@@ -285,6 +287,10 @@ export interface QuerySelect {
   limit?: number
   /** OFFSET count */
   offset?: number
+  /** Raw LIMIT expression */
+  limitRaw?: QueryRawQuery
+  /** Raw OFFSET expression */
+  offsetRaw?: QueryRawQuery
   /** Whether to use DISTINCT */
   distinct?: boolean
   /** UNION clauses */

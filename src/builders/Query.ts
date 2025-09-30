@@ -86,15 +86,6 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
   }
 
   /**
-   * Builds a parameterized query with enhanced sanitization.
-   * @param sql - The SQL query string
-   * @returns Object containing SQL and sanitized parameters
-   */
-  protected buildParameterizedQuery(sql: string): { sql: string; params: unknown[] } {
-    return SqlEscapeHelper.buildParameterizedQuery(sql, this.params)
-  }
-
-  /**
    * Escapes a SQL identifier to prevent injection.
    * @param identifier - Identifier to escape
    * @returns Escaped identifier string
@@ -104,29 +95,11 @@ export abstract class BaseQueryBuilder<T = unknown> implements QueryBuilder<T> {
   }
 
   /**
-   * Escapes a column expression for SQL (handles aliases and functions).
-   * @param expression - Column expression to escape
-   * @returns Escaped column expression
-   */
-  protected escapeColumnExpression(expression: string): string {
-    return SqlEscapeHelper.escapeColumnExpression(expression)
-  }
-
-  /**
    * Escapes multiple identifiers and joins them with commas.
    * @param identifiers - Array of identifiers to escape
    * @returns Comma-separated escaped identifiers
    */
   protected escapeIdentifierList(identifiers: string[]): string {
     return SqlEscapeHelper.escapeIdentifierList(identifiers)
-  }
-
-  /**
-   * Escapes multiple column expressions and joins them with commas.
-   * @param expressions - Array of column expressions to escape
-   * @returns Comma-separated escaped column expressions
-   */
-  protected escapeColumnExpressionList(expressions: string[]): string {
-    return SqlEscapeHelper.escapeColumnExpressionList(expressions)
   }
 }

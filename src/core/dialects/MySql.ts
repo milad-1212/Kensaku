@@ -3,13 +3,13 @@ import type {
   DatabaseConfig,
   DatabaseQueryResult,
   DatabaseTransaction,
-  QuerySelect,
+  QueryDelete,
   QueryInsert,
-  QueryUpdate,
-  QueryDelete
+  QuerySelect,
+  QueryUpdate
 } from '@interfaces/index'
 import { Base } from '@core/dialects/index'
-import { ParameterBuilders, DialectFactory, QueryBuilders } from '@core/dialects/builders/index'
+import { DialectFactory, ParameterBuilders, QueryBuilders } from '@core/dialects/builders/index'
 import type { FieldPacket } from 'mysql2'
 
 /**
@@ -112,15 +112,13 @@ export class MySql extends Base {
     }
     this.buildSelectClause(query, parts)
     this.buildFromClause(query, parts)
-    this.buildJoinClauses(query, parts, params)
+    this.buildJoinClauses(query, parts)
     this.buildWhereClause(query, parts, params)
     this.buildGroupByClause(query, parts)
     this.buildHavingClause(query, parts, params)
-    this.buildOrderByClause(query, parts)
-    this.buildLimitClause(query, parts)
-    this.buildOffsetClause(query, parts)
-    QueryBuilders.buildWindowFunctions(query, parts, this.escapeIdentifier.bind(this))
-    QueryBuilders.buildConditionalExpressions(query, parts, this.escapeIdentifier.bind(this))
+    this.buildOrderByClause(query, parts, params)
+    this.buildLimitClause(query, parts, params)
+    this.buildOffsetClause(query, parts, params)
     QueryBuilders.buildSetOperations(
       query,
       parts,
@@ -218,6 +216,12 @@ export class MySql extends Base {
    * @returns Escaped identifier string
    */
   escapeIdentifier(name: string): string {
+    if (name.includes('.')) {
+      return name
+        .split('.')
+        .map((part: string) => `\`${part.replace(/`/g, '``')}\``)
+        .join('.')
+    }
     return `\`${name.replace(/`/g, '``')}\``
   }
 

@@ -1,5 +1,5 @@
-import type { DatabaseConfig, ConnectionBase } from '@interfaces/index'
-import { Base, Postgres, MySql, Sqlite } from '@core/dialects/index'
+import type { ConnectionBase, DatabaseConfig } from '@interfaces/index'
+import { Base, MySql, Postgres, Sqlite } from '@core/dialects/index'
 import { getInvalidDatabaseTypeError } from '@constants/index'
 
 /**
@@ -97,7 +97,7 @@ export class Connection {
    */
   private createDialect(type: string): Base {
     switch (type) {
-      case 'postgresql':
+      case 'postgres':
         return new Postgres(this.config)
       case 'mysql':
         return new MySql(this.config)

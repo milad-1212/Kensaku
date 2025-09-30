@@ -1,4 +1,9 @@
-import type { QuerySelect, QuerySubQuery } from '@interfaces/index'
+import type {
+  QuerySelect,
+  QuerySubQuery,
+  QueryOrderClause,
+  QueryDirectionType
+} from '@interfaces/index'
 import { errorMessages } from '@constants/index'
 
 /**
@@ -66,7 +71,11 @@ export class SelectMixin {
    * @param column - Column to order by
    * @param direction - Sort direction
    */
-  static addOrderBy(query: QuerySelect, column: string, direction: 'ASC' | 'DESC' = 'ASC'): void {
+  static addOrderBy(
+    query: QuerySelect,
+    column: string,
+    direction: QueryDirectionType = 'ASC'
+  ): void {
     query.orderBy ??= []
     query.orderBy.push({
       column,
@@ -79,18 +88,24 @@ export class SelectMixin {
    * @param query - Query object to modify
    * @param expression - SQL expression to order by
    * @param direction - Sort direction
+   * @param params - Parameters for the expression
    */
   static addOrderByExpression(
     query: QuerySelect,
     expression: string,
-    direction: 'ASC' | 'DESC' = 'ASC'
+    direction: QueryDirectionType = 'ASC',
+    params?: unknown[]
   ): void {
     query.orderBy ??= []
-    query.orderBy.push({
+    const orderClause: QueryOrderClause = {
       column: expression,
       direction,
       isExpression: true
-    })
+    }
+    if (params !== undefined) {
+      orderClause.params = params
+    }
+    query.orderBy.push(orderClause)
   }
 
   /**
@@ -109,5 +124,31 @@ export class SelectMixin {
    */
   static setOffset(query: QuerySelect, count: number): void {
     query.offset = count
+  }
+
+  /**
+   * Sets raw LIMIT expression for the query.
+   * @param query - Query object to modify
+   * @param sql - Raw SQL expression
+   * @param params - Parameters for the SQL expression
+   */
+  static setLimitRaw(query: QuerySelect, sql: string, params?: unknown[]): void {
+    query.limitRaw = {
+      sql,
+      params: params ?? []
+    }
+  }
+
+  /**
+   * Sets raw OFFSET expression for the query.
+   * @param query - Query object to modify
+   * @param sql - Raw SQL expression
+   * @param params - Parameters for the SQL expression
+   */
+  static setOffsetRaw(query: QuerySelect, sql: string, params?: unknown[]): void {
+    query.offsetRaw = {
+      sql,
+      params: params ?? []
+    }
   }
 }

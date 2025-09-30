@@ -1,3 +1,4 @@
+import type { DatabaseType } from '@interfaces/index'
 import {
   errorMessages,
   getInvalidIdentifierError,
@@ -178,14 +179,11 @@ export class SqlSanitizer {
    * @param databaseType - The target database type
    * @returns Database-specific sanitized value
    */
-  static sanitizeForDatabase(
-    value: unknown,
-    databaseType: 'postgresql' | 'mysql' | 'sqlite'
-  ): unknown {
+  static sanitizeForDatabase(value: unknown, databaseType: DatabaseType): unknown {
     const sanitized: unknown = this.sanitizeValue(value)
     if (typeof sanitized === 'string') {
       switch (databaseType) {
-        case 'postgresql':
+        case 'postgres':
           return sanitized.replace(/\$/g, '$$$$')
         case 'mysql':
           return sanitized.replace(/`/g, '``')

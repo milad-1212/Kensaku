@@ -1,9 +1,5 @@
-import {
-  DataTypeHelpers,
-  createTypeMapper,
-  typeMappers,
-  type DatabaseType
-} from '@core/dialects/builders/DataType'
+import type { DatabaseType } from '@interfaces/index'
+import { createTypeMapper, DataTypeHelpers, typeMappers } from '@core/dialects/builders/index'
 import { getInvalidDatabaseError } from '@constants/index'
 
 /**
@@ -20,14 +16,6 @@ export class DialectFactory {
   static getTypeMapper(databaseType: DatabaseType): (genericType: string) => string {
     const typeMapper: (genericType: string) => string = createTypeMapper(databaseType)
     return typeMapper
-  }
-
-  /**
-   * Gets pre-configured type mappers for all supported databases.
-   * @returns Object containing type mappers for each database
-   */
-  static getTypeMappers(): typeof typeMappers {
-    return typeMappers
   }
 
   /**

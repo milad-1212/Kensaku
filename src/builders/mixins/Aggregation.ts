@@ -1,7 +1,8 @@
 import type {
   QuerySelect,
   QueryAggregationExpression,
-  QueryAggregationFunction
+  QueryAggregationFunction,
+  QueryDirectionType
 } from '@interfaces/index'
 
 /**
@@ -24,7 +25,7 @@ export class AggregationMixin {
     alias?: string,
     options?: {
       distinct?: boolean
-      orderBy?: { column: string; direction: 'ASC' | 'DESC' }[]
+      orderBy?: { column: string; direction: QueryDirectionType }[]
       separator?: string
       percentile?: number
     }
@@ -34,7 +35,7 @@ export class AggregationMixin {
       function: func,
       column,
       ...alias != null && { alias },
-      ...options?.distinct != null && { distinct: options.distinct },
+      ...options?.distinct !== undefined && { distinct: options.distinct },
       ...options?.orderBy != null && { orderBy: options.orderBy },
       ...options?.separator != null && { separator: options.separator },
       ...options?.percentile != null && { percentile: options.percentile }
@@ -158,7 +159,7 @@ export class AggregationMixin {
     column: string,
     alias?: string,
     separator?: string,
-    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    orderBy?: { column: string; direction: QueryDirectionType }[],
     distinct?: boolean
   ): void {
     this.addAggregation(query, 'GROUP_CONCAT', column, alias, {
@@ -182,7 +183,7 @@ export class AggregationMixin {
     column: string,
     alias?: string,
     separator?: string,
-    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    orderBy?: { column: string; direction: QueryDirectionType }[],
     distinct?: boolean
   ): void {
     this.addAggregation(query, 'STRING_AGG', column, alias, {
@@ -204,7 +205,7 @@ export class AggregationMixin {
     query: QuerySelect,
     column: string,
     alias?: string,
-    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    orderBy?: { column: string; direction: QueryDirectionType }[],
     distinct?: boolean
   ): void {
     this.addAggregation(query, 'ARRAY_AGG', column, alias, {
@@ -225,7 +226,7 @@ export class AggregationMixin {
     query: QuerySelect,
     column: string,
     alias?: string,
-    orderBy?: { column: string; direction: 'ASC' | 'DESC' }[],
+    orderBy?: { column: string; direction: QueryDirectionType }[],
     distinct?: boolean
   ): void {
     this.addAggregation(query, 'JSON_AGG', column, alias, {

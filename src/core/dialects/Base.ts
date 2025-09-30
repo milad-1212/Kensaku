@@ -1,14 +1,14 @@
 import type {
   ConnectionBase,
   DatabaseConfig,
-  QuerySelect,
-  QueryInsert,
-  QueryUpdate,
-  QueryDelete,
   QueryCTEClause,
+  QueryDelete,
+  QueryInsert,
+  QuerySelect,
+  QueryUpdate,
   QueryWhereCondition
 } from '@interfaces/index'
-import { QueryBuilders, ClauseBuilders, ParameterBuilders } from '@core/dialects/builders'
+import { ClauseBuilders, ParameterBuilders, QueryBuilders } from '@core/dialects/builders'
 
 /**
  * Abstract base class for database dialect implementations.
@@ -195,16 +195,9 @@ export abstract class Base {
    * Builds JOIN clauses for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts
-   * @param params - Array to store query parameters
    */
-  protected buildJoinClauses(query: QuerySelect, parts: string[], params: unknown[]): void {
-    QueryBuilders.buildJoinClauses(
-      query,
-      parts,
-      params,
-      this.escapeIdentifier.bind(this),
-      this.buildWhereConditions.bind(this)
-    )
+  protected buildJoinClauses(query: QuerySelect, parts: string[]): void {
+    QueryBuilders.buildJoinClauses(query, parts, this.escapeIdentifier.bind(this))
   }
 
   /**
@@ -240,27 +233,30 @@ export abstract class Base {
    * Builds the ORDER BY clause for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
    */
-  protected buildOrderByClause(query: QuerySelect, parts: string[]): void {
-    QueryBuilders.buildOrderByClause(query, parts, this.escapeIdentifier.bind(this))
+  protected buildOrderByClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    QueryBuilders.buildOrderByClause(query, parts, this.escapeIdentifier.bind(this), params)
   }
 
   /**
    * Builds the LIMIT clause for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
    */
-  protected buildLimitClause(query: QuerySelect, parts: string[]): void {
-    QueryBuilders.buildLimitClause(query, parts)
+  protected buildLimitClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    QueryBuilders.buildLimitClause(query, parts, params)
   }
 
   /**
    * Builds the OFFSET clause for any dialect.
    * @param query - SELECT query object
    * @param parts - Array to store SQL parts
+   * @param params - Array to store query parameters
    */
-  protected buildOffsetClause(query: QuerySelect, parts: string[]): void {
-    QueryBuilders.buildOffsetClause(query, parts)
+  protected buildOffsetClause(query: QuerySelect, parts: string[], params: unknown[]): void {
+    QueryBuilders.buildOffsetClause(query, parts, params)
   }
 
   /**

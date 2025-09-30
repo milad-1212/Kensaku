@@ -1,16 +1,4 @@
-/**
- * Configuration for database connection pooling.
- */
-export interface ConnectionPoolConfig {
-  /** Minimum number of connections in the pool */
-  min?: number
-  /** Maximum number of connections in the pool */
-  max?: number
-  /** Time in milliseconds before idle connections are closed */
-  idleTimeout?: number
-  /** Time in milliseconds to wait for a connection from the pool */
-  acquireTimeout?: number
-}
+import type { ConnectionPoolConfig } from '@interfaces/index'
 
 /**
  * Configuration object for database connections.
@@ -86,4 +74,4 @@ export interface DatabaseTransaction {
 /**
  * Supported database types.
  */
-export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite'
+export type DatabaseType = 'postgres' | 'mysql' | 'sqlite'

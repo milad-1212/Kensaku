@@ -1,40 +1,5 @@
+import type { DatabaseType } from '@interfaces/index'
 import { getInvalidDatabaseTypeError } from '@constants/index'
-
-/**
- * Supported database types.
- */
-export type DatabaseType = 'mysql' | 'postgres' | 'sqlite'
-
-/**
- * Generic data types that can be mapped to database-specific types.
- */
-export type GenericDataType =
-  | 'VARCHAR'
-  | 'TEXT'
-  | 'CHAR'
-  | 'INT'
-  | 'BIGINT'
-  | 'SMALLINT'
-  | 'TINYINT'
-  | 'DECIMAL'
-  | 'FLOAT'
-  | 'DOUBLE'
-  | 'BOOLEAN'
-  | 'DATE'
-  | 'TIME'
-  | 'TIMESTAMP'
-  | 'DATETIME'
-  | 'JSON'
-  | 'JSONB'
-  | 'UUID'
-  | 'ARRAY'
-  | 'BLOB'
-  | 'REAL'
-  | 'NUMERIC'
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'date'
 
 /** Database-specific type mappings */
 const typeMappings: Record<DatabaseType, Record<string, string>> = {

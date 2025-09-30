@@ -178,10 +178,15 @@ export class QueryValidator {
       if (typeof join.table === 'string') {
         SqlSanitizer.sanitizeIdentifier(join.table)
       }
-      if (join.on == null || !Array.isArray(join.on)) {
+      if (
+        join.type !== 'CROSS' &&
+        (join.on == null || !Array.isArray(join.on) || join.on.length === 0)
+      ) {
         throw new Error(errorMessages.JOIN.MISSING_ON_CONDITIONS)
       }
-      this.validateWhereConditions(join.on)
+      if (join.on != null && Array.isArray(join.on) && join.on.length > 0) {
+        this.validateWhereConditions(join.on)
+      }
     })
   }
 }
